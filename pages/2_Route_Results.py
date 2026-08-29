@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import folium
+import json
+import os
+from datetime import datetime
 
 from streamlit_folium import st_folium
 
@@ -17,55 +20,323 @@ from utils.climate import (
 # ============================================================
 
 st.set_page_config(
-    page_title="UrbanBreeze - Route Results",
+    page_title="UrbanBreeze | Route Results",
     page_icon="🌿",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 
 # ============================================================
-# CSS
+# CUSTOM CSS
+# IMPORTANT:
+# This is CSS only.
+# No visible HTML is written into the dashboard.
 # ============================================================
 
 st.markdown(
     """
     <style>
 
+    /* ========================================================
+       GLOBAL
+       ======================================================== */
+
     .stApp {
-        background-color: #f6fbfc;
+        background: #062b32;
+        color: #f5fbfc;
     }
 
-    .block-container {
-        padding-top: 2rem;
+    .main .block-container {
+        max-width: 1280px;
+        padding-top: 0.8rem;
+        padding-bottom: 4rem;
         padding-left: 5%;
         padding-right: 5%;
-        padding-bottom: 4rem;
     }
 
-    .route-hero {
-        background: white;
-        border: 1px solid #e3edef;
-        border-radius: 20px;
-        padding: 25px;
-        margin-bottom: 20px;
+    /* Hide Streamlit default elements */
+
+    #MainMenu {
+        visibility: hidden;
     }
 
-    .ai-box {
-        background-color: #e9f7f6;
-        border: 2px solid #159c9c;
-        border-radius: 18px;
-        padding: 20px;
-        margin-bottom: 20px;
+    footer {
+        visibility: hidden;
     }
+
+    /* ========================================================
+       TEXT
+       ======================================================== */
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        color: #f5fbfc !important;
+        letter-spacing: -0.5px;
+    }
+
+    p,
+    label,
+    .stCaption {
+        color: #b5c9cc !important;
+    }
+
+    .stMarkdown,
+    .stText {
+        color: #f5fbfc;
+    }
+
+    /* ========================================================
+       NAVBAR
+       ======================================================== */
+
+    .navbar-title {
+        font-size: 23px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+        padding-top: 7px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .navbar-divider {
+        border-bottom: 1px solid rgba(255,255,255,0.10);
+        margin-top: 10px;
+        margin-bottom: 28px;
+        width: 100%;
+    }
+
+    /* Navbar navigation buttons */
+    .navbar-nav .stButton > button {
+        width: 100% !important;
+        min-height: 43px;
+        height: 43px;
+        padding: 0 12px !important;
+
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 650;
+
+        border: 1px solid rgba(255,255,255,0.16);
+        background: #0a343b;
+        color: #eefafa;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        transition: all 0.15s ease;
+    }
+
+    .navbar-nav .stButton > button:hover {
+        border-color: #18aaa8;
+        color: #ffffff;
+        background: #0d4148;
+    }
+
+    /* Profile circle */
+    .navbar-profile .stButton > button {
+        width: 43px !important;
+        height: 43px !important;
+        min-height: 43px !important;
+
+        padding: 0 !important;
+        margin: 0 auto !important;
+
+        border-radius: 50% !important;
+
+        background: #ffffff !important;
+        border: 1px solid #d7e4e7 !important;
+
+        color: #000000 !important;
+
+        font-size: 18px !important;
+        line-height: 1 !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        filter: grayscale(100%);
+    }
+
+    .navbar-profile .stButton > button:hover {
+        background: #f1f8f8 !important;
+        border-color: #159f9f !important;
+        color: #000000 !important;
+    }
+
+    /* Prevent horizontal overflow anywhere on the page */
+    .main .block-container {
+        overflow-x: hidden;
+    }
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
 
     .stButton > button {
-        border-radius: 12px;
-        min-height: 48px;
+        border-radius: 10px;
+        min-height: 43px;
         font-weight: 650;
+        border: 1px solid rgba(255,255,255,0.16);
+        background: #0a343b;
+        color: #eefafa;
+        transition: all 0.15s ease;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    .stButton > button:hover {
+        border-color: #18aaa8;
+        color: #ffffff;
+        background: #0d4148;
+    }
+
+    /* Primary buttons */
+    .stButton > button[kind="primary"] {
+        background: #16a5a5;
+        border-color: #16a5a5;
+        color: white;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background: #13b5b2;
+        border-color: #13b5b2;
+    }
+
+    /* ========================================================
+       METRIC CARDS
+       ======================================================== */
+
+    div[data-testid="stMetric"] {
+        background: #0a353c;
+        border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 14px;
+        padding: 20px 18px;
+        min-height: 125px;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: #b9cbce !important;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-size: 27px !important;
+        font-weight: 750 !important;
+    }
+
+    /* ========================================================
+       INPUTS
+       ======================================================== */
+
+    .stTextInput input,
+    .stSelectbox div[data-baseweb="select"],
+    .stRadio div[data-baseweb="radio"] {
+        background: #092f36 !important;
+        color: #ffffff !important;
+    }
+
+    .stTextInput input {
+        border: 1px solid rgba(255,255,255,0.20) !important;
+        border-radius: 10px !important;
+    }
+
+    /* ========================================================
+       DATAFRAME
+       ======================================================== */
+
+    div[data-testid="stDataFrame"] {
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    /* ========================================================
+       MAP
+       ======================================================== */
+
     iframe {
-        border-radius: 18px !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+    }
+
+    /* ========================================================
+       ALERTS
+       ======================================================== */
+
+    div[data-testid="stAlert"] {
+        border-radius: 12px;
+    }
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
+
+    @media (max-width: 768px) {
+
+        .main .block-container {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 0.5rem;
+            overflow-x: hidden;
+        }
+
+        .navbar-title {
+            font-size: 18px;
+            padding-top: 5px;
+            max-width: 100%;
+        }
+
+        .navbar-nav .stButton > button {
+            min-height: 40px;
+            height: 40px;
+            padding: 0 6px !important;
+            font-size: 11px;
+            white-space: normal;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        .navbar-profile .stButton > button {
+            width: 40px !important;
+            height: 40px !important;
+            min-height: 40px !important;
+            font-size: 17px !important;
+        }
+
+        h1 {
+            font-size: 30px !important;
+        }
+
+        h2 {
+            font-size: 23px !important;
+        }
+
+        h3 {
+            font-size: 20px !important;
+        }
+
+        div[data-testid="stMetric"] {
+            padding: 15px;
+            min-height: 105px;
+        }
+
+        div[data-testid="stMetricValue"] {
+            font-size: 21px !important;
+        }
+
+        .stButton > button {
+            min-height: 42px;
+            max-width: 100%;
+        }
     }
 
     </style>
@@ -75,7 +346,244 @@ st.markdown(
 
 
 # ============================================================
-# GET USER DATA FROM PLAN ROUTE
+# TIME FORMATTER
+# ============================================================
+
+def format_duration(minutes):
+
+    try:
+        minutes = int(
+            round(
+                float(minutes)
+            )
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+        return "N/A"
+
+    if minutes < 60:
+        return f"{minutes} min"
+
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+
+    if hours == 1:
+        hour_text = "1 hr"
+    else:
+        hour_text = f"{hours} hrs"
+
+    if remaining_minutes == 0:
+        return hour_text
+
+    return f"{hour_text} {remaining_minutes} min"
+
+
+# ============================================================
+# PROJECT PATHS
+# ============================================================
+
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+DATA_DIR = os.path.join(
+    PROJECT_ROOT,
+    "data"
+)
+
+HISTORY_FILE = os.path.join(
+    DATA_DIR,
+    "route_history.json"
+)
+
+
+# ============================================================
+# ROUTE HISTORY
+# ============================================================
+
+def load_route_history():
+
+    os.makedirs(
+        DATA_DIR,
+        exist_ok=True
+    )
+
+    if not os.path.exists(
+        HISTORY_FILE
+    ):
+        return []
+
+    try:
+
+        with open(
+            HISTORY_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            data = json.load(file)
+
+        if isinstance(data, list):
+            return data
+
+    except (
+        json.JSONDecodeError,
+        OSError
+    ):
+        return []
+
+    return []
+
+
+def save_route_history(history):
+
+    os.makedirs(
+        DATA_DIR,
+        exist_ok=True
+    )
+
+    with open(
+        HISTORY_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            history,
+            file,
+            indent=2,
+            ensure_ascii=False
+        )
+
+
+def save_selected_route_to_history(
+    route,
+    route_type,
+    route_key
+):
+
+    history = load_route_history()
+
+    climate = route.get(
+        "climate",
+        {}
+    )
+
+    history_item = {
+
+        "timestamp":
+            datetime.now().isoformat(
+                timespec="seconds"
+            ),
+
+        "start":
+            start_location,
+
+        "destination":
+            destination,
+
+        "travel_mode":
+            travel_mode,
+
+        "route_type":
+            route_type,
+
+        "route_key":
+            route_key,
+
+        "duration_minutes":
+            float(
+                route.get(
+                    "duration_min",
+                    0
+                )
+            ),
+
+        "duration":
+            format_duration(
+                route.get(
+                    "duration_min",
+                    0
+                )
+            ),
+
+        "distance_km":
+            float(
+                route.get(
+                    "distance_km",
+                    0
+                )
+            ),
+
+        "average_temperature":
+            climate.get(
+                "average_temperature"
+            ),
+
+        "minimum_temperature":
+            climate.get(
+                "minimum_temperature"
+            ),
+
+        "maximum_temperature":
+            climate.get(
+                "maximum_temperature"
+            ),
+
+        "heat_exposure":
+            climate.get(
+                "heat_exposure",
+                "Unknown"
+            ),
+
+        "cool_score":
+            climate.get(
+                "cool_score"
+            ),
+
+        "ai_score":
+            route.get(
+                "ai_score"
+            )
+    }
+
+    existing_index = None
+
+    for index, item in enumerate(history):
+
+        if (
+            item.get("route_key")
+            == route_key
+        ):
+
+            existing_index = index
+            break
+
+    if existing_index is not None:
+
+        history[
+            existing_index
+        ] = history_item
+
+    else:
+
+        history.insert(
+            0,
+            history_item
+        )
+
+    save_route_history(
+        history
+    )
+
+
+# ============================================================
+# GET USER DATA
 # ============================================================
 
 start_location = st.session_state.get(
@@ -90,7 +598,7 @@ destination = st.session_state.get(
 
 travel_mode = st.session_state.get(
     "travel_mode",
-    "🚶 Walk"
+    "Walk"
 )
 
 prefer_cooler = st.session_state.get(
@@ -108,6 +616,140 @@ destination_coords = st.session_state.get(
 
 
 # ============================================================
+# NAVBAR
+# ============================================================
+
+# Keep the brand on the left and group all navigation controls
+# together on the right. The compact profile column prevents
+# a large empty gap after History.
+
+nav_brand, nav_right = st.columns(
+    [1.65, 2.35],
+    gap="small"
+)
+
+
+# ------------------------------------------------------------
+# BRAND
+# ------------------------------------------------------------
+
+with nav_brand:
+
+    st.markdown(
+        "### 🌬️ UrbanBreeze"
+    )
+
+
+# ------------------------------------------------------------
+# RIGHT-SIDE NAVIGATION
+# ------------------------------------------------------------
+
+with nav_right:
+
+    plan_col, saved_col, history_col, profile_col = st.columns(
+        [1.0, 1.18, 0.82, 0.42],
+        gap="small"
+    )
+
+
+    with plan_col:
+
+        st.markdown(
+            '<div class="navbar-nav">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "Plan Route",
+            key="navbar_plan_route",
+            use_container_width=True
+        ):
+
+            st.switch_page(
+                "pages/1_Plan_Route.py"
+            )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+
+    with saved_col:
+
+        st.markdown(
+            '<div class="navbar-nav">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "Saved Places",
+            key="navbar_saved_places",
+            use_container_width=True
+        ):
+
+            st.switch_page(
+                "pages/3_Saved_Places.py"
+            )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+
+    with history_col:
+
+        st.markdown(
+            '<div class="navbar-nav">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "History",
+            key="navbar_history",
+            use_container_width=True
+        ):
+
+            st.switch_page(
+                "pages/4_Route_History.py"
+            )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+
+    with profile_col:
+
+        st.markdown(
+            '<div class="navbar-profile">',
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "👤",
+            key="navbar_profile_icon",
+            help="Profile"
+        ):
+
+            st.switch_page(
+                "pages/5_Profile.py"
+            )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+
+st.markdown(
+    '<div class="navbar-divider"></div>',
+    unsafe_allow_html=True
+)
+
+# ============================================================
 # CHECK COORDINATES
 # ============================================================
 
@@ -122,7 +764,11 @@ if start_coords is None:
         "a starting location."
     )
 
-    if st.button("← Back to Plan Route"):
+    if st.button(
+        "← Back to Plan Route",
+        type="primary",
+        key="missing_start_back_btn"
+    ):
 
         st.switch_page(
             "pages/1_Plan_Route.py"
@@ -142,7 +788,11 @@ if destination_coords is None:
         "a destination."
     )
 
-    if st.button("← Back to Plan Route"):
+    if st.button(
+        "← Back to Plan Route",
+        type="primary",
+        key="missing_dest_back_btn"
+    ):
 
         st.switch_page(
             "pages/1_Plan_Route.py"
@@ -155,62 +805,58 @@ if destination_coords is None:
 # PAGE HEADER
 # ============================================================
 
-st.title("🌿 UrbanBreeze")
-
-st.subheader("Climate-aware route results")
+st.title(
+    "Route Results"
+)
 
 st.write(
-    f"**{start_location}** → **{destination}**"
+    f"{start_location}  →  {destination}"
 )
 
 st.caption(
-    f"Travel mode: {travel_mode}"
+    f"{travel_mode}  •  Climate-aware route planning"
 )
 
 
 # ============================================================
-# CREATE A UNIQUE CACHE KEY
-# ============================================================
-#
-# IMPORTANT:
-#
-# Streamlit reruns the whole page whenever a button
-# is clicked.
-#
-# We DO NOT want every button click to call FortyGuard
-# again.
-#
-# Therefore route/climate results are stored in
-# session_state.
+# ROUTE CACHE KEY
 # ============================================================
 
 cache_key = (
+
     f"{start_coords['lat']:.6f}_"
+
     f"{start_coords['lon']:.6f}_"
+
     f"{destination_coords['lat']:.6f}_"
+
     f"{destination_coords['lon']:.6f}_"
+
     f"{travel_mode}"
 )
 
 
 # ============================================================
-# GENERATE REAL ROUTES + CLIMATE DATA
+# GENERATE ROUTES
 # ============================================================
 
 if (
-    "route_results_cache" not in st.session_state
+    "route_results_cache"
+    not in st.session_state
+
     or
+
     st.session_state.route_results_cache.get(
         "key"
     ) != cache_key
 ):
 
     # --------------------------------------------------------
-    # REAL OSRM ROUTES
+    # OSRM
     # --------------------------------------------------------
 
     with st.spinner(
-        "🗺️ Finding real route options..."
+        "Finding real route options..."
     ):
 
         routes = get_routes(
@@ -218,7 +864,6 @@ if (
             destination_coords,
             travel_mode
         )
-
 
     if not routes:
 
@@ -228,7 +873,8 @@ if (
         )
 
         if st.button(
-            "← Try another route"
+            "← Try another route",
+            key="no_route_try_again_btn"
         ):
 
             st.switch_page(
@@ -237,42 +883,42 @@ if (
 
         st.stop()
 
-
     # --------------------------------------------------------
-    # REAL FORTYGUARD CLIMATE ANALYSIS
+    # FORTYGUARD
     # --------------------------------------------------------
 
     progress = st.progress(
         0,
-        text="🌡️ Analyzing route temperatures..."
+        text="Analyzing route climate..."
     )
 
     total_routes = len(routes)
 
-
     for index, route in enumerate(routes):
 
-        climate_result = analyze_route_temperature(
-            route,
-            number_of_points=5
+        climate_result = (
+            analyze_route_temperature(
+                route,
+                number_of_points=5
+            )
         )
 
-        route["climate"] = climate_result
+        route["climate"] = (
+            climate_result
+        )
 
         progress.progress(
             (index + 1) / total_routes,
             text=(
-                f"🌡️ Analyzed route "
+                f"Analyzing route "
                 f"{index + 1}/{total_routes}"
             )
         )
 
-
     progress.empty()
 
-
     # --------------------------------------------------------
-    # REAL ROUTE COMPARISON
+    # COMPARE
     # --------------------------------------------------------
 
     comparison = compare_routes(
@@ -280,34 +926,38 @@ if (
         prefer_cooler=prefer_cooler
     )
 
-
-    # --------------------------------------------------------
-    # SAVE RESULTS
-    # --------------------------------------------------------
-
     st.session_state.route_results_cache = {
 
-        "key": cache_key,
+        "key":
+            cache_key,
 
-        "routes": routes,
+        "routes":
+            routes,
 
-        "comparison": comparison
+        "comparison":
+            comparison
     }
 
 
 # ============================================================
-# LOAD CACHED RESULTS
+# LOAD CACHE
 # ============================================================
 
-cached = st.session_state.route_results_cache
+cached = (
+    st.session_state.route_results_cache
+)
 
-routes = cached["routes"]
+routes = cached[
+    "routes"
+]
 
-comparison = cached["comparison"]
+comparison = cached[
+    "comparison"
+]
 
 
 # ============================================================
-# GET ROUTE TYPES
+# ROUTE TYPES
 # ============================================================
 
 fastest_route = comparison.get(
@@ -322,10 +972,6 @@ ai_pick = comparison.get(
     "ai_pick"
 )
 
-
-# ============================================================
-# SAFETY
-# ============================================================
 
 if fastest_route is None:
 
@@ -342,80 +988,95 @@ if ai_pick is None:
 
 
 # ============================================================
-# INITIAL ROUTE
-# ============================================================
-#
-# AI Recommended is selected initially.
+# DEFAULT SELECTION
 # ============================================================
 
-if "selected_route_type" not in st.session_state:
+if (
+    "selected_route_type"
+    not in st.session_state
+):
 
-    st.session_state.selected_route_type = "ai"
+    st.session_state.selected_route_type = (
+        "ai"
+    )
 
 
 # ============================================================
-# ROUTE SELECTOR
+# ROUTE SELECTION
 # ============================================================
 
-st.markdown("---")
+st.markdown("## Choose your route")
 
-st.subheader(
-    "Choose your route"
+route_col1, route_col2, route_col3 = (
+    st.columns(3)
 )
 
-col1, col2, col3 = st.columns(3)
 
-
-with col1:
+with route_col1:
 
     if st.button(
-        "🤖 AI Recommended",
+        "AI Recommended",
         use_container_width=True,
         type=(
             "primary"
-            if st.session_state.selected_route_type
+            if
+            st.session_state.selected_route_type
             == "ai"
-            else "secondary"
-        )
+            else
+            "secondary"
+        ),
+        key="select_route_ai_btn"
     ):
 
-        st.session_state.selected_route_type = "ai"
+        st.session_state.selected_route_type = (
+            "ai"
+        )
 
         st.rerun()
 
 
-with col2:
+with route_col2:
 
     if st.button(
-        "⚡ Fastest",
+        "Fastest",
         use_container_width=True,
         type=(
             "primary"
-            if st.session_state.selected_route_type
+            if
+            st.session_state.selected_route_type
             == "fastest"
-            else "secondary"
-        )
+            else
+            "secondary"
+        ),
+        key="select_route_fastest_btn"
     ):
 
-        st.session_state.selected_route_type = "fastest"
+        st.session_state.selected_route_type = (
+            "fastest"
+        )
 
         st.rerun()
 
 
-with col3:
+with route_col3:
 
     if st.button(
-        "🥶 Coolest",
+        "Coolest",
         use_container_width=True,
         type=(
             "primary"
-            if st.session_state.selected_route_type
+            if
+            st.session_state.selected_route_type
             == "coolest"
-            else "secondary"
-        )
+            else
+            "secondary"
+        ),
+        key="select_route_coolest_btn"
     ):
 
-        st.session_state.selected_route_type = "coolest"
+        st.session_state.selected_route_type = (
+            "coolest"
+        )
 
         st.rerun()
 
@@ -424,45 +1085,80 @@ with col3:
 # SELECT ROUTE
 # ============================================================
 
-selection = st.session_state.selected_route_type
+selection = (
+    st.session_state.selected_route_type
+)
 
 
 if selection == "fastest":
 
     selected_route = fastest_route
 
-    route_title = "⚡ Fastest Route"
+    route_title = (
+        "Fastest Route"
+    )
 
     route_description = (
         "The route with the shortest travel time."
     )
+
+    history_route_type = "Fastest"
 
 
 elif selection == "coolest":
 
     selected_route = coolest_route
 
-    route_title = "🥶 Coolest Route"
+    route_title = (
+        "Coolest Route"
+    )
 
     route_description = (
-        "The route with the highest climate comfort score."
+        "The route with the highest climate comfort."
     )
+
+    history_route_type = "Coolest"
 
 
 else:
 
     selected_route = ai_pick
 
-    route_title = "🤖 AI Recommended Route"
+    route_title = (
+        "AI Recommended Route"
+    )
 
     route_description = (
         "The best balance between travel time "
         "and climate comfort."
     )
 
+    history_route_type = "AI Recommended"
+
 
 # ============================================================
-# SELECTED ROUTE DATA
+# SAVE TO HISTORY
+# ============================================================
+
+route_key = (
+
+    f"{cache_key}_"
+
+    f"{selection}_"
+
+    f"{selected_route.get('route_number', 0)}"
+)
+
+
+save_selected_route_to_history(
+    selected_route,
+    history_route_type,
+    route_key
+)
+
+
+# ============================================================
+# CLIMATE DATA
 # ============================================================
 
 climate = selected_route.get(
@@ -489,26 +1185,23 @@ ai_score = selected_route.get(
 
 
 # ============================================================
-# SELECTED ROUTE HERO
+# RECOMMENDED ROUTE
 # ============================================================
 
-st.markdown(
-    f"""
-    <div class="ai-box">
+st.markdown("## Recommended journey")
 
-    <h2>{route_title}</h2>
-
-    <p>{route_description}</p>
-
-    </div>
-    """,
-    unsafe_allow_html=True
+st.info(
+    f"{route_title}\n\n"
+    f"{route_description}"
 )
 
 
 # ============================================================
-# METRICS
+# MAIN METRICS
 # ============================================================
+
+st.markdown("### Journey overview")
+
 
 m1, m2, m3, m4 = st.columns(4)
 
@@ -516,15 +1209,19 @@ m1, m2, m3, m4 = st.columns(4)
 with m1:
 
     st.metric(
-        "⏱️ Travel Time",
-        f"{selected_route['duration_min']:.0f} min"
+        "Travel Time",
+        format_duration(
+            selected_route[
+                "duration_min"
+            ]
+        )
     )
 
 
 with m2:
 
     st.metric(
-        "📏 Distance",
+        "Distance",
         f"{selected_route['distance_km']:.1f} km"
     )
 
@@ -534,14 +1231,14 @@ with m3:
     if temperature is not None:
 
         st.metric(
-            "🌡️ Avg Temperature",
+            "Temperature",
             f"{temperature:.1f} °C"
         )
 
     else:
 
         st.metric(
-            "🌡️ Avg Temperature",
+            "Temperature",
             "N/A"
         )
 
@@ -551,14 +1248,14 @@ with m4:
     if cool_score is not None:
 
         st.metric(
-            "🥶 Cool Score",
+            "Cool Score",
             f"{cool_score}/100"
         )
 
     else:
 
         st.metric(
-            "🥶 Cool Score",
+            "Cool Score",
             "N/A"
         )
 
@@ -567,22 +1264,22 @@ with m4:
 # AI SCORE
 # ============================================================
 
-if selection == "ai" and ai_score is not None:
+if (
+    selection == "ai"
+    and
+    ai_score is not None
+):
 
-    st.info(
-        f"🤖 **AI Score: {ai_score}/100**  "
-        f"— climate comfort + travel time"
+    st.success(
+        f"AI Score: {ai_score}/100"
     )
 
 
 # ============================================================
-# MAP
+# ROUTE MAP
 # ============================================================
 
-st.subheader(
-    "🗺️ Selected Route"
-)
-
+st.markdown("## Route map")
 
 geometry = selected_route.get(
     "geometry"
@@ -591,86 +1288,112 @@ geometry = selected_route.get(
 
 if geometry:
 
-    coordinates = geometry["coordinates"]
-
+    coordinates = geometry[
+        "coordinates"
+    ]
 
     route_points = [
+
         [
             point[1],
             point[0]
         ]
+
         for point in coordinates
     ]
 
-
     center_lat = (
-        start_coords["lat"]
-        +
-        destination_coords["lat"]
-    ) / 2
 
+        start_coords["lat"]
+
+        +
+
+        destination_coords["lat"]
+
+    ) / 2
 
     center_lon = (
+
         start_coords["lon"]
+
         +
+
         destination_coords["lon"]
+
     ) / 2
 
-
     route_map = folium.Map(
+
         location=[
             center_lat,
             center_lon
         ],
+
         zoom_start=13,
+
         control_scale=True
     )
 
-
-    # --------------------------------------------------------
-    # START
-    # --------------------------------------------------------
+    # Start
 
     folium.Marker(
+
         [
             start_coords["lat"],
             start_coords["lon"]
         ],
+
         tooltip="Starting point",
+
         popup=start_location
-    ).add_to(route_map)
 
+    ).add_to(
+        route_map
+    )
 
-    # --------------------------------------------------------
-    # DESTINATION
-    # --------------------------------------------------------
+    # Destination
 
     folium.Marker(
+
         [
             destination_coords["lat"],
             destination_coords["lon"]
         ],
+
         tooltip="Destination",
+
         popup=destination
-    ).add_to(route_map)
 
+    ).add_to(
+        route_map
+    )
 
-    # --------------------------------------------------------
-    # SELECTED ROUTE
-    # --------------------------------------------------------
+    # Route
 
     folium.PolyLine(
-        locations=route_points,
-        weight=8,
-        opacity=0.9,
-        tooltip=route_title
-    ).add_to(route_map)
 
+        locations=route_points,
+
+        weight=7,
+
+        opacity=0.9,
+
+        tooltip=route_title
+
+    ).add_to(
+        route_map
+    )
 
     st_folium(
+
         route_map,
+
         width=None,
-        height=550
+
+        height=520,
+
+        returned_objects=[],
+        key="route_results_map"
     )
 
 
@@ -682,41 +1405,58 @@ else:
 
 
 # ============================================================
-# CLIMATE INFORMATION
+# CLIMATE INSIGHTS
 # ============================================================
 
-st.subheader(
-    "🌡️ Climate information"
-)
-
+st.markdown("## Climate insights")
 
 c1, c2, c3 = st.columns(3)
 
 
 with c1:
 
-    st.metric(
-        "Minimum",
-        (
-            f"{climate['minimum_temperature']:.1f} °C"
-            if climate.get("minimum_temperature")
-            is not None
-            else "N/A"
+    minimum_temperature = (
+        climate.get(
+            "minimum_temperature"
         )
     )
+
+    if minimum_temperature is not None:
+
+        st.metric(
+            "Minimum Temperature",
+            f"{minimum_temperature:.1f} °C"
+        )
+
+    else:
+
+        st.metric(
+            "Minimum Temperature",
+            "N/A"
+        )
 
 
 with c2:
 
-    st.metric(
-        "Maximum",
-        (
-            f"{climate['maximum_temperature']:.1f} °C"
-            if climate.get("maximum_temperature")
-            is not None
-            else "N/A"
+    maximum_temperature = (
+        climate.get(
+            "maximum_temperature"
         )
     )
+
+    if maximum_temperature is not None:
+
+        st.metric(
+            "Maximum Temperature",
+            f"{maximum_temperature:.1f} °C"
+        )
+
+    else:
+
+        st.metric(
+            "Maximum Temperature",
+            "N/A"
+        )
 
 
 with c3:
@@ -728,13 +1468,10 @@ with c3:
 
 
 # ============================================================
-# ROUTE COMPARISON TABLE
+# ROUTE COMPARISON
 # ============================================================
 
-st.subheader(
-    "📊 Compare Routes"
-)
-
+st.markdown("## Compare routes")
 
 table_rows = []
 
@@ -746,62 +1483,92 @@ for route in routes:
         {}
     )
 
-
-    route_number = route["route_number"]
-
-
-    # --------------------------------------------------------
-    # Determine label
-    # --------------------------------------------------------
+    route_number = route[
+        "route_number"
+    ]
 
     labels = []
 
-
     if (
         fastest_route
+
         and
+
         route_number
         ==
-        fastest_route["route_number"]
+        fastest_route[
+            "route_number"
+        ]
     ):
 
         labels.append(
-            "⚡ Fastest"
+            "Fastest"
         )
-
 
     if (
         coolest_route
+
         and
+
         route_number
         ==
-        coolest_route["route_number"]
+        coolest_route[
+            "route_number"
+        ]
     ):
 
         labels.append(
-            "🥶 Coolest"
+            "Coolest"
         )
-
 
     if (
         ai_pick
+
         and
+
         route_number
         ==
-        ai_pick["route_number"]
+        ai_pick[
+            "route_number"
+        ]
     ):
 
         labels.append(
-            "🤖 AI Recommended"
+            "AI Recommended"
         )
 
-
-    label = " / ".join(labels)
+    label = (
+        " / ".join(
+            labels
+        )
+    )
 
     if not label:
-        label = "Alternative Route"
+
+        label = (
+            "Alternative"
+        )
+
+    average_temperature = (
+        route_climate.get(
+            "average_temperature"
+        )
+    )
+
+    route_cool_score = (
+        route_climate.get(
+            "cool_score"
+        )
+    )
+
+    route_ai_score = (
+        route.get(
+            "ai_score"
+        )
+    )
 
     table_rows.append({
+
         "Route":
             f"Route {route_number}",
 
@@ -809,35 +1576,43 @@ for route in routes:
             label,
 
         "Time":
-            f"{route['duration_min']:.0f} min",
+            format_duration(
+                route[
+                    "duration_min"
+                ]
+            ),
 
         "Distance":
             f"{route['distance_km']:.1f} km",
 
         "Avg Temp":
             (
-                f"{route_climate['average_temperature']:.1f} °C"
-                if route_climate.get(
-                    "average_temperature"
-                ) is not None
-                else "N/A"
+                f"{average_temperature:.1f} °C"
+                if
+                average_temperature
+                is not None
+                else
+                "N/A"
             ),
 
         "Cool Score":
             (
-                f"{route_climate['cool_score']}/100"
-                if route_climate.get(
-                    "cool_score"
-                ) is not None
-                else "N/A"
+                f"{route_cool_score}/100"
+                if
+                route_cool_score
+                is not None
+                else
+                "N/A"
             ),
 
         "AI Score":
             (
-                f"{route.get('ai_score')}/100"
-                if route.get("ai_score")
+                f"{route_ai_score}/100"
+                if
+                route_ai_score
                 is not None
-                else "N/A"
+                else
+                "N/A"
             )
     })
 
@@ -849,9 +1624,91 @@ comparison_df = pd.DataFrame(
 
 st.dataframe(
     comparison_df,
+
     use_container_width=True,
+
     hide_index=True
 )
+
+
+# ============================================================
+# ROUTE SUMMARY
+# ============================================================
+
+st.markdown("## Journey summary")
+
+st.write(
+    f"**{start_location}** → **{destination}**"
+)
+
+st.write(
+    f"Travel time: **{format_duration(selected_route['duration_min'])}**"
+)
+
+st.write(
+    f"Distance: **{selected_route['distance_km']:.1f} km**"
+)
+
+if temperature is not None:
+
+    st.write(
+        f"Average temperature: **{temperature:.1f} °C**"
+    )
+
+if cool_score is not None:
+
+    st.write(
+        f"Climate comfort score: **{cool_score}/100**"
+    )
+
+
+# ============================================================
+# NAVIGATION
+# ============================================================
+
+st.markdown("### Continue")
+
+
+back_col, history_col, plan_col = st.columns(3)
+
+
+with back_col:
+
+    if st.button(
+        "← Plan another route",
+        use_container_width=True,
+        key="bottom_plan_another_route_btn"
+    ):
+
+        st.switch_page(
+            "pages/1_Plan_Route.py"
+        )
+
+
+with history_col:
+
+    if st.button(
+        "View route history",
+        use_container_width=True,
+        key="bottom_view_history_btn"
+    ):
+
+        st.switch_page(
+            "pages/4_Route_History.py"
+        )
+
+
+with plan_col:
+
+    if st.button(
+        "Saved Places",
+        use_container_width=True,
+        key="bottom_saved_places_btn"
+    ):
+
+        st.switch_page(
+            "pages/3_Saved_Places.py"
+        )
 
 
 # ============================================================
