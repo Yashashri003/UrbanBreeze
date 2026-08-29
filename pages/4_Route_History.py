@@ -43,8 +43,13 @@ st.markdown(
     """
     <style>
 
+    /* ========================================================
+       GLOBAL
+       ======================================================== */
+
     .stApp {
-        background-color: #f7fafb;
+        background-color: #071a20 !important;
+        color: #ffffff !important;
     }
 
     .block-container {
@@ -61,75 +66,307 @@ st.markdown(
         visibility: hidden;
     }
 
-    /* Navbar */
+
+    /* ========================================================
+       ALL TEXT
+       ======================================================== */
+
+    body {
+        color: #ffffff !important;
+    }
+
+    p {
+        color: #d7e7ea !important;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        color: #ffffff !important;
+    }
+
+    [data-testid="stCaptionContainer"] {
+        color: #91aeb5 !important;
+    }
+
+    [data-testid="stMarkdownContainer"] {
+        color: #ffffff;
+    }
+
+
+    /* ========================================================
+       NAVBAR
+       ======================================================== */
 
     .brand-text {
         font-size: 22px;
         font-weight: 750;
-        color: #173843;
+        color: #ffffff !important;
         padding-top: 8px;
     }
 
     .brand-mark {
-        color: #159b9b;
+        color: #2dd4bf !important;
         font-size: 25px;
     }
 
     .nav-line {
-        border-bottom: 1px solid #e1eaec;
+        border-bottom: 1px solid #23434b;
         margin-top: 8px;
         margin-bottom: 30px;
     }
 
-    /* History header */
+
+    /* NAVIGATION LINKS */
+
+    [data-testid="stPageLink-NavLink"] {
+        color: #d7e7ea !important;
+        font-weight: 600 !important;
+    }
+
+    [data-testid="stPageLink-NavLink"]:hover {
+        color: #2dd4bf !important;
+    }
+
+
+    /* ========================================================
+       HISTORY HEADER
+       ======================================================== */
 
     .history-icon-box {
         width: 62px;
         height: 62px;
         border-radius: 16px;
-        background-color: #e9f7f6;
-        color: #149b9b;
+
+        background-color: #0d3339;
+
+        color: #2dd4bf;
+
         display: flex;
         align-items: center;
         justify-content: center;
+
         font-size: 30px;
+
+        border: 1px solid #22535a;
+
+        box-shadow:
+            0 5px 18px rgba(0, 0, 0, 0.25);
     }
 
+
     .muted-text {
-        color: #71868e;
+        color: #91aeb5;
         font-size: 14px;
     }
 
-    /* Pills */
+
+    /* ========================================================
+       SEARCH INPUT
+       ======================================================== */
+
+    .stTextInput input {
+        background-color: #0d272e !important;
+        color: #ffffff !important;
+
+        border: 1px solid #28505a !important;
+        border-radius: 10px !important;
+
+        min-height: 42px;
+    }
+
+    .stTextInput input::placeholder {
+        color: #78939a !important;
+    }
+
+    .stTextInput input:focus {
+        border-color: #2dd4bf !important;
+
+        box-shadow:
+            0 0 0 3px rgba(45, 212, 191, 0.12) !important;
+    }
+
+
+    /* ========================================================
+       SELECT BOX
+       ======================================================== */
+
+    div[data-baseweb="select"] > div {
+        background-color: #0d272e !important;
+
+        border: 1px solid #28505a !important;
+
+        border-radius: 10px !important;
+
+        color: #ffffff !important;
+    }
+
+    div[data-baseweb="select"] span {
+        color: #ffffff !important;
+    }
+
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
+
+    .stButton > button {
+        background-color: #12343b !important;
+
+        color: #ffffff !important;
+
+        border: 1px solid #28545c !important;
+
+        border-radius: 10px !important;
+
+        min-height: 42px;
+
+        font-weight: 600;
+
+        transition: all 0.15s ease;
+    }
+
+    .stButton > button:hover {
+        background-color: #18464e !important;
+
+        border-color: #2dd4bf !important;
+
+        color: #ffffff !important;
+
+        transform: translateY(-1px);
+    }
+
+
+    /* ========================================================
+       PRIMARY BUTTONS
+       ======================================================== */
+
+    .stButton > button[kind="primary"] {
+        background-color: #149b9b !important;
+
+        border-color: #149b9b !important;
+
+        color: #ffffff !important;
+
+        font-weight: 700;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background-color: #0f8585 !important;
+
+        border-color: #2dd4bf !important;
+
+        color: #ffffff !important;
+    }
+
+
+    /* ========================================================
+       HISTORY CARDS
+       ======================================================== */
+
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #0b252c !important;
+
+        border: 1px solid #24474f !important;
+
+        border-radius: 16px !important;
+
+        box-shadow:
+            0 5px 18px rgba(0, 0, 0, 0.22);
+    }
+
+
+    /* ========================================================
+       FASTEST PILL
+       ======================================================== */
 
     .fastest-pill {
-        background-color: #fff4df;
-        color: #a96800;
+        background-color: #3a2d16;
+
+        color: #f5c66d;
+
         padding: 5px 10px;
+
         border-radius: 20px;
+
         font-size: 12px;
+
         font-weight: 700;
+
+        border: 1px solid #5b451f;
     }
+
+
+    /* ========================================================
+       AI RECOMMENDED PILL
+       ======================================================== */
 
     .ai-pill {
-        background-color: #eaf7f6;
-        color: #138d8e;
+        background-color: #103b3b;
+
+        color: #54ddd0;
+
         padding: 5px 10px;
+
         border-radius: 20px;
+
         font-size: 12px;
+
         font-weight: 700;
+
+        border: 1px solid #1e6262;
     }
+
+
+    /* ========================================================
+       COOLEST PILL
+       ======================================================== */
 
     .coolest-pill {
-        background-color: #edf2ff;
-        color: #536bb3;
+        background-color: #172746;
+
+        color: #9eb5ff;
+
         padding: 5px 10px;
+
         border-radius: 20px;
+
         font-size: 12px;
+
         font-weight: 700;
+
+        border: 1px solid #2a4370;
     }
 
-    /* Mobile */
+
+    /* ========================================================
+       DIVIDERS
+       ======================================================== */
+
+    hr {
+        border-color: #23434b !important;
+    }
+
+
+    /* ========================================================
+       INFO BOX
+       ======================================================== */
+
+    div[data-testid="stAlert"] {
+        background-color: #0d3035 !important;
+
+        border: 1px solid #22545a !important;
+
+        color: #d7eeee !important;
+
+        border-radius: 12px !important;
+    }
+
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
 
     @media (max-width: 700px) {
 
