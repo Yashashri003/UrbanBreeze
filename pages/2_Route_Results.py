@@ -99,82 +99,17 @@ st.markdown(
         font-weight: 800;
         color: #ffffff;
         letter-spacing: -0.5px;
-        padding-top: 7px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        padding-top: 9px;
+    }
+
+    .navbar-brand {
+        color: #18aaa8;
     }
 
     .navbar-divider {
         border-bottom: 1px solid rgba(255,255,255,0.10);
-        margin-top: 10px;
+        margin-top: 8px;
         margin-bottom: 28px;
-        width: 100%;
-    }
-
-    /* Navbar navigation buttons */
-    .navbar-nav .stButton > button {
-        width: 100% !important;
-        min-height: 43px;
-        height: 43px;
-        padding: 0 12px !important;
-
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 650;
-
-        border: 1px solid rgba(255,255,255,0.16);
-        background: #0a343b;
-        color: #eefafa;
-
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
-        transition: all 0.15s ease;
-    }
-
-    .navbar-nav .stButton > button:hover {
-        border-color: #18aaa8;
-        color: #ffffff;
-        background: #0d4148;
-    }
-
-    /* Profile circle */
-    .navbar-profile .stButton > button {
-        width: 43px !important;
-        height: 43px !important;
-        min-height: 43px !important;
-
-        padding: 0 !important;
-        margin: 0 auto !important;
-
-        border-radius: 50% !important;
-
-        background: #ffffff !important;
-        border: 1px solid #d7e4e7 !important;
-
-        color: #000000 !important;
-
-        font-size: 18px !important;
-        line-height: 1 !important;
-
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-
-        filter: grayscale(100%);
-    }
-
-    .navbar-profile .stButton > button:hover {
-        background: #f1f8f8 !important;
-        border-color: #159f9f !important;
-        color: #000000 !important;
-    }
-
-    /* Prevent horizontal overflow anywhere on the page */
-    .main .block-container {
-        overflow-x: hidden;
     }
 
     /* ========================================================
@@ -189,9 +124,6 @@ st.markdown(
         background: #0a343b;
         color: #eefafa;
         transition: all 0.15s ease;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .stButton > button:hover {
@@ -201,6 +133,7 @@ st.markdown(
     }
 
     /* Primary buttons */
+
     .stButton > button[kind="primary"] {
         background: #16a5a5;
         border-color: #16a5a5;
@@ -283,33 +216,13 @@ st.markdown(
     @media (max-width: 768px) {
 
         .main .block-container {
-            padding-left: 12px;
-            padding-right: 12px;
+            padding-left: 16px;
+            padding-right: 16px;
             padding-top: 0.5rem;
-            overflow-x: hidden;
         }
 
         .navbar-title {
             font-size: 18px;
-            padding-top: 5px;
-            max-width: 100%;
-        }
-
-        .navbar-nav .stButton > button {
-            min-height: 40px;
-            height: 40px;
-            padding: 0 6px !important;
-            font-size: 11px;
-            white-space: normal;
-            line-height: 1.15;
-            overflow-wrap: anywhere;
-        }
-
-        .navbar-profile .stButton > button {
-            width: 40px !important;
-            height: 40px !important;
-            min-height: 40px !important;
-            font-size: 17px !important;
         }
 
         h1 {
@@ -335,7 +248,6 @@ st.markdown(
 
         .stButton > button {
             min-height: 42px;
-            max-width: 100%;
         }
     }
 
@@ -619,19 +531,12 @@ destination_coords = st.session_state.get(
 # NAVBAR
 # ============================================================
 
-# Keep the brand on the left and group all navigation controls
-# together on the right. The compact profile column prevents
-# a large empty gap after History.
-
-nav_brand, nav_right = st.columns(
-    [1.65, 2.35],
-    gap="small"
+nav_brand, nav_plan, nav_saved, nav_history, nav_profile = (
+    st.columns(
+        [2.2, 1, 1, 1, 1]
+    )
 )
 
-
-# ------------------------------------------------------------
-# BRAND
-# ------------------------------------------------------------
 
 with nav_brand:
 
@@ -640,107 +545,55 @@ with nav_brand:
     )
 
 
-# ------------------------------------------------------------
-# RIGHT-SIDE NAVIGATION
-# ------------------------------------------------------------
+with nav_plan:
 
-with nav_right:
+    if st.button(
+        "Plan Route",
+        use_container_width=True,
+        key="nav_plan_route_btn"
+    ):
 
-    plan_col, saved_col, history_col, profile_col = st.columns(
-        [1.0, 1.18, 0.82, 0.42],
-        gap="small"
-    )
-
-
-    with plan_col:
-
-        st.markdown(
-            '<div class="navbar-nav">',
-            unsafe_allow_html=True
-        )
-
-        if st.button(
-            "Plan Route",
-            key="navbar_plan_route",
-            use_container_width=True
-        ):
-
-            st.switch_page(
-                "pages/1_Plan_Route.py"
-            )
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True
+        st.switch_page(
+            "pages/1_Plan_Route.py"
         )
 
 
-    with saved_col:
+with nav_saved:
 
-        st.markdown(
-            '<div class="navbar-nav">',
-            unsafe_allow_html=True
-        )
+    if st.button(
+        "Saved Places",
+        use_container_width=True,
+        key="nav_saved_places_btn"
+    ):
 
-        if st.button(
-            "Saved Places",
-            key="navbar_saved_places",
-            use_container_width=True
-        ):
-
-            st.switch_page(
-                "pages/3_Saved_Places.py"
-            )
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True
+        st.switch_page(
+            "pages/3_Saved_Places.py"
         )
 
 
-    with history_col:
+with nav_history:
 
-        st.markdown(
-            '<div class="navbar-nav">',
-            unsafe_allow_html=True
-        )
+    if st.button(
+        "History",
+        use_container_width=True,
+        key="nav_history_btn"
+    ):
 
-        if st.button(
-            "History",
-            key="navbar_history",
-            use_container_width=True
-        ):
-
-            st.switch_page(
-                "pages/4_Route_History.py"
-            )
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True
+        st.switch_page(
+            "pages/4_Route_History.py"
         )
 
 
-    with profile_col:
+with nav_profile:
 
-        st.markdown(
-            '<div class="navbar-profile">',
-            unsafe_allow_html=True
-        )
+    if st.button(
+        "◯ Profile",
+        use_container_width=True,
+        key="nav_profile_btn"
+    ):
 
-        if st.button(
-            "👤",
-            key="navbar_profile_icon",
-            help="Profile"
-        ):
-
-            st.switch_page(
-                "pages/5_Profile.py"
-            )
-
-        st.markdown(
-            "</div>",
-            unsafe_allow_html=True
+        st.switch_page(
+            "pages/5_Profile.py"
         )
 
 
@@ -748,6 +601,7 @@ st.markdown(
     '<div class="navbar-divider"></div>',
     unsafe_allow_html=True
 )
+
 
 # ============================================================
 # CHECK COORDINATES
