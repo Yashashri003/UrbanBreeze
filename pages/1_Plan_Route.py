@@ -11,7 +11,7 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium
 from utils.routing import search_california_locations
-
+from utils.ui import apply_urbanbreeze_theme, logo, section_title
 
 # ============================================
 # PAGE CONFIGURATION
@@ -22,143 +22,53 @@ st.set_page_config(
     page_icon="🗺️",
     layout="wide"
 )
+apply_urbanbreeze_theme()
 
 
-# ============================================
-# CSS
-# ============================================
-
-st.markdown("""
-<style>
-
-.stApp {
-    background-color: #f6fbfc;
-}
-
-.block-container {
-    padding-top: 2rem;
-    padding-left: 5%;
-    padding-right: 5%;
-}
-
-
-/* Navigation */
-
-.logo {
-    color: #123f4b;
-    font-size: 25px;
-    font-weight: 700;
-}
-
-
-/* Page title */
-
-.page-heading {
-    color: #123f4b;
-    font-size: 42px;
-    font-weight: 700;
-    margin-top: 25px;
-}
-
-.page-description {
-    color: #71858b;
-    font-size: 17px;
-    margin-bottom: 25px;
-}
-
-
-/* Location boxes */
-
-.location-box {
-    background-color: white;
-    border: 1px solid #e3edef;
-    border-radius: 18px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0px 4px 15px rgba(18, 63, 75, 0.05);
-}
-
-
-/* Selected location */
-
-.selected-location {
-    background-color: #e9f7f6;
-    border-radius: 12px;
-    padding: 12px;
-    color: #286168;
-    margin-top: 10px;
-}
-
-
-/* Map heading */
-
-.map-title {
-    color: #123f4b;
-    font-size: 22px;
-    font-weight: 650;
-}
-
-</style>
-""", unsafe_allow_html=True)
 
 
 # ============================================
 # NAVIGATION
 # ============================================
 
-nav1, nav2, nav3, nav4 = st.columns(
-    [4, 1, 1, 1]
-)
-
+nav1, nav2, nav3, nav4 = st.columns([4, 1, 1, 1])
 
 with nav1:
-
-    st.markdown(
-        '<div class="logo">🌬️ UrbanBreeze</div>',
-        unsafe_allow_html=True
-    )
-
+    logo()
 
 with nav2:
-
-    if st.button("Home"):
-
+    if st.button("Home", use_container_width=True):
         st.switch_page("app.py")
 
-
 with nav3:
-
-    st.write("Plan Route")
-
+    if st.button("Plan Route", use_container_width=True):
+        st.switch_page("pages/1_Plan_Route.py")
 
 with nav4:
-
-    st.write("History")
-
+    if st.button("History", use_container_width=True):
+        st.switch_page("pages/4_Route_History.py")
 
 st.divider()
-
 
 # ============================================
 # PAGE TITLE
 # ============================================
 
 st.markdown(
-    '<div class="page-heading">'
-    'Plan your smart route'
-    '</div>',
+    '<div class="ub-eyebrow">CLIMATE-AWARE ROUTING</div>',
     unsafe_allow_html=True
 )
 
 st.markdown(
-    """
-    <div class="page-description">
+    '<div class="ub-hero-title">Plan your <span>smart route.</span></div>',
+    unsafe_allow_html=True
+)
 
-    Search for an address, city or street in California,
-    or simply pin your location directly on the map.
-
-    </div>
-    """,
+st.markdown(
+    '<div class="ub-hero-description">'
+    'Search for an address, city or street in California, '
+    'or simply pin your location directly on the map.'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -187,6 +97,15 @@ st.markdown(
 )
 
 st.subheader("📍 Starting point")
+
+st.markdown(
+    """
+    <div class="ub-section-caption">
+        Choose where your journey begins.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 start_method = st.radio(
@@ -397,6 +316,15 @@ st.markdown(
 
 st.subheader("🎯 Destination")
 
+st.markdown(
+    """
+    <div class="ub-section-caption">
+        Choose where you want to go.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 destination_method = st.radio(
     "How do you want to select your destination?",
@@ -603,6 +531,15 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 st.subheader("🚗 How are you travelling?")
 
+st.markdown(
+    """
+    <div class="ub-section-caption">
+        Select your preferred mode of transport.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 travel_mode = st.radio(
     "Travel mode",
     [
@@ -621,6 +558,15 @@ travel_mode = st.radio(
 
 st.subheader("🌡️ Route preferences")
 
+st.markdown(
+    """
+    <div class="ub-section-caption">
+        Tell UrbanBreeze what matters most for your journey.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 prefer_cooler = st.checkbox(
     "Prefer a cooler route",
@@ -638,8 +584,7 @@ max_extra_time = st.slider(
 
 
 st.caption(
-    f"Maximum extra time: "
-    f"{max_extra_time} minutes"
+    f"Maximum extra time: {max_extra_time} minutes"
 )
 
 
