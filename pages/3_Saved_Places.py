@@ -40,7 +40,7 @@ SAVED_PLACES_FILE = os.path.join(
 
 
 # ============================================================
-# MODERN CSS
+# DARK URBANBREEZE UI
 # ============================================================
 
 st.markdown(
@@ -52,8 +52,8 @@ st.markdown(
        ======================================================== */
 
     .stApp {
-        background-color: #f7fafb;
-        color: #173843;
+        background-color: #07191f;
+        color: #ffffff;
     }
 
     .block-container {
@@ -61,6 +61,7 @@ st.markdown(
         padding-top: 1rem;
         padding-bottom: 3rem;
     }
+
     #MainMenu {
         visibility: hidden;
     }
@@ -74,128 +75,105 @@ st.markdown(
     }
 
 
-   /* ========================================================
-   NAVBAR
-   ======================================================== */
-
-.ub-navbar {
-    width: 100%;
-    min-height: 62px;
-
-    display: flex;
-    align-items: center;
-
-    border-bottom: 1px solid #e1eaec;
-
-    margin-bottom: 28px;
-}
-
-.brand {
-    font-size: 21px;
-    font-weight: 750;
-    color: #173843;
-    white-space: nowrap;
-}
-
-.brand-mark {
-    color: #159b9b;
-    font-size: 22px;
-    margin-right: 5px;
-}
-
-
-/* Navbar links */
-
-.nav-link {
-    color: #173843 !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    text-decoration: none !important;
-    white-space: nowrap !important;
-}
-
-.nav-link:hover {
-    color: #149b9b !important;
-}
-
-
-/* Profile icon */
-
-.profile-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-
-    color: #173843 !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-
-    white-space: nowrap;
-}
-
-.profile-icon {
-    width: 32px;
-    height: 32px;
-
-    border-radius: 50%;
-
-    background: #e8f7f6;
-
-    color: #149b9b;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 16px;
-}
-
-
-/* Mobile */
-
-@media (max-width: 700px) {
+    /* ========================================================
+       NAVBAR
+       ======================================================== */
 
     .ub-navbar {
-        min-height: 56px;
-        margin-bottom: 22px;
+        width: 100%;
+        min-height: 62px;
+
+        display: flex;
+        align-items: center;
+
+        border-bottom: 1px solid #24434b;
+
+        margin-bottom: 28px;
     }
 
     .brand {
-        font-size: 17px;
+        font-size: 21px;
+        font-weight: 750;
+        color: #ffffff;
+        white-space: nowrap;
     }
 
     .brand-mark {
-        font-size: 19px;
+        color: #21c7c2;
+        font-size: 22px;
+        margin-right: 5px;
     }
+
+
+    /* ========================================================
+       NAVIGATION LINKS
+       ======================================================== */
 
     .nav-link {
-        font-size: 12px !important;
+        color: #d8e7e9 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        white-space: nowrap !important;
     }
 
-    .profile-link {
-        font-size: 12px !important;
+    .nav-link:hover {
+        color: #21c7c2 !important;
     }
 
-    .profile-icon {
-        width: 29px;
-        height: 29px;
-        font-size: 14px;
-    }
-}
+
     /* ========================================================
        HEADINGS
        ======================================================== */
 
     h1 {
-        color: #173843 !important;
+        color: #ffffff !important;
         font-weight: 750 !important;
         letter-spacing: -1px;
     }
 
     h2,
-    h3 {
-        color: #173843 !important;
+    h3,
+    h4 {
+        color: #ffffff !important;
+    }
+
+    p,
+    label,
+    .stMarkdown {
+        color: #e3eef0;
+    }
+
+    .stCaption,
+    [data-testid="stCaptionContainer"] {
+        color: #9eb4ba !important;
+    }
+
+
+    /* ========================================================
+       HERO ICON
+       ======================================================== */
+
+    .hero-icon-box {
+        width: 58px;
+        height: 58px;
+
+        background-color: #10343c;
+
+        border: 1px solid #1d5b63;
+
+        border-radius: 15px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: #21c7c2;
+
+        font-size: 28px;
+        font-weight: 400;
+
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.20);
     }
 
 
@@ -204,18 +182,52 @@ st.markdown(
        ======================================================== */
 
     .stTextInput input {
+        background-color: #10262d !important;
+        color: #ffffff !important;
+
         border-radius: 10px !important;
-        border: 1px solid #d7e4e7 !important;
+        border: 1px solid #31515a !important;
+
         min-height: 42px;
     }
 
-    .stTextInput input:focus {
-        border-color: #159b9b !important;
-        box-shadow: 0 0 0 3px rgba(21, 155, 155, 0.12) !important;
+    .stTextInput input::placeholder {
+        color: #829ba2 !important;
     }
 
-    div[data-baseweb="select"] {
-        border-radius: 10px !important;
+    .stTextInput input:focus {
+        border-color: #21c7c2 !important;
+
+        box-shadow:
+            0 0 0 3px rgba(33, 199, 194, 0.14) !important;
+    }
+
+
+    /* ========================================================
+       SELECTBOX
+       ======================================================== */
+
+    div[data-baseweb="select"] > div {
+        background-color: #10262d !important;
+        border-color: #31515a !important;
+        color: #ffffff !important;
+    }
+
+    div[data-baseweb="select"] span {
+        color: #ffffff !important;
+    }
+
+
+    /* ========================================================
+       RADIO BUTTONS
+       ======================================================== */
+
+    div[data-testid="stRadio"] label {
+        color: #dcebed !important;
+    }
+
+    div[data-testid="stRadio"] label p {
+        color: #dcebed !important;
     }
 
 
@@ -225,14 +237,46 @@ st.markdown(
 
     .stButton > button {
         border-radius: 10px !important;
+
         min-height: 42px;
+
         font-weight: 600;
+
         white-space: nowrap;
+
+        background-color: #12343c !important;
+        color: #ffffff !important;
+
+        border: 1px solid #31545d !important;
+
         transition: 0.15s ease;
     }
 
     .stButton > button:hover {
         transform: translateY(-1px);
+
+        background-color: #17464f !important;
+
+        border-color: #21c7c2 !important;
+
+        color: #ffffff !important;
+    }
+
+
+    /* ========================================================
+       PRIMARY BUTTONS
+       ======================================================== */
+
+    .stButton > button[kind="primary"] {
+        background-color: #159b9b !important;
+        border-color: #159b9b !important;
+        color: #ffffff !important;
+    }
+
+    .stButton > button[kind="primary"]:hover {
+        background-color: #20b8b3 !important;
+        border-color: #20b8b3 !important;
+        color: #ffffff !important;
     }
 
 
@@ -241,14 +285,14 @@ st.markdown(
        ======================================================== */
 
     div[class*="st-key-use_wrap"] .stButton > button {
-        background-color: #149b9b !important;
-        border-color: #149b9b !important;
-        color: white !important;
+        background-color: #159b9b !important;
+        border-color: #159b9b !important;
+        color: #ffffff !important;
     }
 
     div[class*="st-key-use_wrap"] .stButton > button:hover {
-        background-color: #0f8585 !important;
-        border-color: #0f8585 !important;
+        background-color: #20b8b3 !important;
+        border-color: #20b8b3 !important;
     }
 
 
@@ -260,6 +304,7 @@ st.markdown(
         width: 44px !important;
         min-width: 44px !important;
         max-width: 44px !important;
+
         height: 44px !important;
         min-height: 44px !important;
 
@@ -267,10 +312,11 @@ st.markdown(
 
         border-radius: 10px !important;
 
-        background-color: #ffffff !important;
-        border: 1px solid #dce7e9 !important;
+        background-color: #10262d !important;
 
-        color: #60777f !important;
+        border: 1px solid #31515a !important;
+
+        color: #a9bcc1 !important;
 
         font-size: 22px !important;
         font-weight: 400 !important;
@@ -281,9 +327,9 @@ st.markdown(
     }
 
     div[class*="st-key-delete_wrap"] .stButton > button:hover {
-        background-color: #fff4f3 !important;
-        border-color: #e8b7b1 !important;
-        color: #d14b3f !important;
+        background-color: #3a2022 !important;
+        border-color: #a85d5d !important;
+        color: #ff8d8d !important;
     }
 
 
@@ -326,43 +372,33 @@ st.markdown(
 
 
     /* ========================================================
-       HERO
+       CARDS / CONTAINERS
        ======================================================== */
 
-    .hero-icon-box {
-        width: 58px;
-        height: 58px;
+    div[data-testid="stVerticalBlockBorderWrapper"] {
 
-        background-color: #e8f7f6;
+        background-color: #0d252c !important;
 
-        border-radius: 15px;
+        border-radius: 16px !important;
 
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        border: 1px solid #294951 !important;
 
-        color: #149b9b;
-
-        font-size: 28px;
-        font-weight: 400;
+        box-shadow:
+            0 5px 20px rgba(0, 0, 0, 0.18);
     }
 
 
     /* ========================================================
-       SAVED PLACE CARD
+       PLACE ICON
        ======================================================== */
-
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 16px !important;
-        border-color: #dce8ea !important;
-    }
-
 
     .place-icon {
         width: 48px;
         height: 48px;
 
-        background-color: #e9f7f6;
+        background-color: #103a42;
+
+        border: 1px solid #205c64;
 
         border-radius: 13px;
 
@@ -370,7 +406,7 @@ st.markdown(
         align-items: center;
         justify-content: center;
 
-        color: #149b9b;
+        color: #21c7c2;
 
         font-size: 21px;
 
@@ -378,8 +414,12 @@ st.markdown(
     }
 
 
+    /* ========================================================
+       PLACE NAME
+       ======================================================== */
+
     .place-name {
-        color: #173843;
+        color: #ffffff;
 
         font-size: 18px;
 
@@ -393,8 +433,12 @@ st.markdown(
     }
 
 
+    /* ========================================================
+       PLACE ADDRESS
+       ======================================================== */
+
     .place-address {
-        color: #71858d;
+        color: #9eb4ba;
 
         font-size: 13px;
 
@@ -406,6 +450,10 @@ st.markdown(
     }
 
 
+    /* ========================================================
+       CATEGORY PILL
+       ======================================================== */
+
     .category-pill {
         display: inline-block;
 
@@ -415,9 +463,11 @@ st.markdown(
 
         border-radius: 20px;
 
-        background-color: #eaf7f6;
+        background-color: #123e45;
 
-        color: #138d8e;
+        border: 1px solid #1c666b;
+
+        color: #67d9d4;
 
         font-size: 11px;
 
@@ -432,11 +482,11 @@ st.markdown(
     .confirm-text {
         font-size: 13px;
 
-        color: #9c3a31;
+        color: #ffaaaa;
 
-        background-color: #fff3f1;
+        background-color: #382326;
 
-        border: 1px solid #f1cfca;
+        border: 1px solid #704447;
 
         border-radius: 10px;
 
@@ -451,19 +501,47 @@ st.markdown(
        ======================================================== */
 
     .tip-box {
-        background-color: #edf9f8;
+        background-color: #0d3036;
 
-        border: 1px solid #d8eeec;
+        border: 1px solid #20565b;
 
         border-radius: 14px;
 
         padding: 15px 18px;
 
-        color: #48656d;
+        color: #b7cccf;
 
         font-size: 13px;
 
         margin-top: 28px;
+    }
+
+    .tip-box strong {
+        color: #ffffff;
+    }
+
+
+    /* ========================================================
+       SUCCESS / INFO / WARNING
+       ======================================================== */
+
+    div[data-testid="stAlert"] {
+        background-color: #102d34 !important;
+        border: 1px solid #28535b !important;
+        color: #e8f5f6 !important;
+    }
+
+    div[data-testid="stAlert"] p {
+        color: #e8f5f6 !important;
+    }
+
+
+    /* ========================================================
+       DIVIDERS
+       ======================================================== */
+
+    hr {
+        border-color: #29464e !important;
     }
 
 
@@ -487,25 +565,11 @@ st.markdown(
             font-size: 20px;
         }
 
-        /*
-           Navbar remains in one row.
-        */
-
-        
-
-        /*
-           Hero becomes simpler on small screens.
-        */
-
         .hero-icon-box {
             width: 50px;
             height: 50px;
             font-size: 24px;
         }
-
-        /*
-           Saved places use exactly two cards per row.
-        */
 
         div[data-testid="stHorizontalBlock"]:has(.place-card-row) {
             flex-wrap: nowrap !important;
@@ -526,10 +590,6 @@ st.markdown(
             font-size: 12px;
         }
 
-        /*
-           Delete stays on the right.
-        */
-
         div[class*="st-key-actions_row"]
         > div[data-testid="stHorizontalBlock"] {
 
@@ -547,6 +607,7 @@ st.markdown(
         }
 
         div[class*="st-key-delete_wrap"] .stButton > button {
+
             width: 44px !important;
             min-width: 44px !important;
             max-width: 44px !important;
@@ -748,6 +809,8 @@ with nav_profile:
         "pages/5_Profile.py",
         label="Profile"
     )
+
+
 # ============================================================
 # PAGE HEADER
 # ============================================================
@@ -868,7 +931,6 @@ if method == "Search location":
         [6, 1]
     )
 
-
     with search_col:
 
         search_query = st.text_input(
@@ -880,7 +942,6 @@ if method == "Search location":
             key=f"search_query_{st.session_state.form_reset_counter}"
         )
 
-
     with button_col:
 
         search_clicked = st.button(
@@ -888,7 +949,6 @@ if method == "Search location":
             type="primary",
             use_container_width=True
         )
-
 
     if search_clicked:
 
@@ -920,7 +980,6 @@ if method == "Search location":
 
                     results = []
 
-
             st.session_state.search_results = (
                 results or []
             )
@@ -940,22 +999,18 @@ if method == "Search location":
             for result in results
         ]
 
-
         selected_location = st.selectbox(
             "Select location",
             location_names
         )
 
-
         selected_index = location_names.index(
             selected_location
         )
 
-
         selected_result = results[
             selected_index
         ]
-
 
         st.session_state.selected_lat = float(
             selected_result["lat"]
@@ -983,7 +1038,6 @@ if method == "Search location":
             control_scale=True
         )
 
-
         folium.Marker(
             [
                 selected_result["lat"],
@@ -993,7 +1047,6 @@ if method == "Search location":
         ).add_to(
             selected_map
         )
-
 
         st_folium(
             selected_map,
@@ -1013,20 +1066,17 @@ else:
         "Click anywhere on the map to choose your location."
     )
 
-
     map_lat = (
         st.session_state.selected_lat
         if st.session_state.selected_lat is not None
         else 37.7749
     )
 
-
     map_lon = (
         st.session_state.selected_lon
         if st.session_state.selected_lon is not None
         else -122.4194
     )
-
 
     pin_map = folium.Map(
         location=[
@@ -1036,7 +1086,6 @@ else:
         zoom_start=11,
         control_scale=True
     )
-
 
     if (
         st.session_state.selected_lat is not None
@@ -1052,7 +1101,6 @@ else:
         ).add_to(
             pin_map
         )
-
 
     map_data = st_folium(
         pin_map,
@@ -1074,7 +1122,6 @@ else:
             "last_clicked"
         )
 
-
         if clicked:
 
             lat = clicked.get(
@@ -1084,7 +1131,6 @@ else:
             lon = clicked.get(
                 "lng"
             )
-
 
             if (
                 lat is not None
@@ -1169,7 +1215,6 @@ if (
                     category
             }
 
-
             if add_saved_place(
                 new_place
             ):
@@ -1177,7 +1222,6 @@ if (
                 st.success(
                     f"{place_name} saved successfully."
                 )
-
 
                 st.session_state.selected_lat = None
                 st.session_state.selected_lon = None
@@ -1187,7 +1231,6 @@ if (
                 st.session_state.form_reset_counter += 1
 
                 st.rerun()
-
 
             else:
 
@@ -1201,7 +1244,6 @@ if (
 # ============================================================
 
 st.markdown("---")
-
 
 places = load_saved_places()
 
@@ -1303,12 +1345,10 @@ else:
             start:start + 2
         ]
 
-
         columns = st.columns(
             len(row_places),
             gap="medium"
         )
-
 
         for index, (column, place) in enumerate(
             zip(
@@ -1325,7 +1365,6 @@ else:
                     unsafe_allow_html=True
                 )
 
-
                 with st.container(
                     border=True
                 ):
@@ -1335,11 +1374,9 @@ else:
                         f"{place.get('name', '')}"
                     )
 
-
                     confirm_state_key = (
                         f"confirm_delete_{place_key}"
                     )
-
 
                     if confirm_state_key not in st.session_state:
 
@@ -1365,7 +1402,6 @@ else:
                         "Other": "●"
                     }
 
-
                     icon = category_icons.get(
                         place.get(
                             "category",
@@ -1373,7 +1409,6 @@ else:
                         ),
                         "●"
                     )
-
 
                     st.markdown(
                         f"""
@@ -1429,7 +1464,6 @@ else:
                         unsafe_allow_html=True
                     )
 
-
                     st.write("")
 
 
@@ -1455,12 +1489,10 @@ else:
                                 unsafe_allow_html=True
                             )
 
-
                             yes_col, no_col = st.columns(
                                 [1, 1],
                                 gap="small"
                             )
-
 
                             with yes_col:
 
@@ -1480,7 +1512,6 @@ else:
 
                                     st.rerun()
 
-
                             with no_col:
 
                                 if st.button(
@@ -1494,7 +1525,6 @@ else:
                                     ] = False
 
                                     st.rerun()
-
 
                         else:
 
@@ -1524,15 +1554,10 @@ else:
                                         use_container_width=True
                                     ):
 
-                                        # Save the selected place
-                                        # for the Plan Route page.
                                         st.session_state[
                                             "saved_route_place"
                                         ] = place
 
-
-                                        # Also expose simple values
-                                        # for the Plan Route page.
                                         st.session_state[
                                             "saved_place_name"
                                         ] = place.get(
@@ -1558,7 +1583,6 @@ else:
                                         ] = place.get(
                                             "lon"
                                         )
-
 
                                         st.switch_page(
                                             "pages/1_Plan_Route.py"
