@@ -3,9 +3,15 @@ import pandas as pd
 import folium
 import json
 import os
+import html
 from datetime import datetime
 
 from streamlit_folium import st_folium
+
+from ai_chatbot import (
+    ask_gemini,
+    build_route_context,
+)
 
 from utils.routing import get_routes
 
@@ -39,194 +45,474 @@ st.markdown(
     <style>
 
     /* ========================================================
-       GLOBAL
+       URBANBREEZE — DARK MODERN UI
+       Matches the dark teal + cyan visual language.
+       No red, no glow, no decorative shadows.
        ======================================================== */
 
+    :root {
+        --ub-bg: #061f26;
+        --ub-bg-deep: #04191f;
+        --ub-surface: #0b2f37;
+        --ub-surface-2: #0e3740;
+        --ub-border: #24545d;
+        --ub-border-soft: #1a444d;
+        --ub-text: #f4fafb;
+        --ub-muted: #8eabb1;
+        --ub-cyan: #20bec3;
+        --ub-cyan-light: #54d4d7;
+        --ub-cyan-dark: #15979c;
+        --ub-green: #203c32;
+        --ub-green-border: #345b4b;
+    }
+
+    /* GLOBAL */
     .stApp {
-        background: #062b32;
-        color: #f5fbfc;
+        background: var(--ub-bg-deep) !important;
+        color: var(--ub-text) !important;
     }
 
     .main .block-container {
-        max-width: 1280px;
+        max-width: 1320px;
         padding-top: 0.8rem;
         padding-bottom: 4rem;
-        padding-left: 5%;
-        padding-right: 5%;
+        padding-left: 3%;
+        padding-right: 3%;
     }
 
-    /* Hide Streamlit default elements */
-
-    #MainMenu {
-        visibility: hidden;
-    }
-
+    #MainMenu,
     footer {
         visibility: hidden;
     }
 
-    /* ========================================================
-       TEXT
-       ======================================================== */
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        color: #f5fbfc !important;
-        letter-spacing: -0.5px;
+    /* TEXT */
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--ub-text) !important;
+        font-weight: 750 !important;
+        letter-spacing: -0.55px;
     }
 
     p,
     label,
-    .stCaption {
-        color: #b5c9cc !important;
+    .stCaption,
+    [data-testid="stCaptionContainer"] {
+        color: var(--ub-muted) !important;
     }
 
-    .stMarkdown,
-    .stText {
-        color: #f5fbfc;
-    }
-
-    /* ========================================================
-       NAVBAR
-       ======================================================== */
-
+    /* NAVBAR */
     .navbar-title {
-        font-size: 23px;
-        font-weight: 800;
-        color: #ffffff;
-        letter-spacing: -0.5px;
-        padding-top: 9px;
+        color: var(--ub-text);
     }
 
-    .navbar-brand {
-        color: #18aaa8;
+    /* Profile button — compact white icon button */
+    div[data-testid="stButton"] button[key="navbar_profile"],
+    div.st-key-navbar_profile button {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        padding: 0 !important;
+        margin-left: auto !important;
+        border-radius: 50% !important;
+        background: #ffffff !important;
+        border: 1px solid #dce7e8 !important;
+        color: #56328a !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        box-shadow: none !important;
     }
 
-    .navbar-divider {
-        border-bottom: 1px solid rgba(255,255,255,0.10);
-        margin-top: 8px;
-        margin-bottom: 28px;
+    div[data-testid="stButton"] button[key="navbar_profile"]:hover,
+    div.st-key-navbar_profile button:hover {
+        background: #ffffff !important;
+        border-color: #cfdfe1 !important;
+        color: #56328a !important;
+        box-shadow: none !important;
+        transform: none !important;
     }
 
-    /* ========================================================
-       BUTTONS
-       ======================================================== */
+    hr {
+        border-color: var(--ub-border) !important;
+    }
 
+    /* BUTTONS — SIMPLE, FLAT, PROFESSIONAL */
     .stButton > button {
-        border-radius: 10px;
-        min-height: 43px;
-        font-weight: 650;
-        border: 1px solid rgba(255,255,255,0.16);
-        background: #0a343b;
-        color: #eefafa;
-        transition: all 0.15s ease;
+        min-height: 43px !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--ub-border) !important;
+        background: var(--ub-surface) !important;
+        color: var(--ub-text) !important;
+        font-weight: 650 !important;
+        box-shadow: none !important;
+        transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .stButton > button:hover {
-        border-color: #18aaa8;
-        color: #ffffff;
-        background: #0d4148;
+        background: var(--ub-surface-2) !important;
+        border-color: var(--ub-cyan) !important;
+        color: var(--ub-cyan-light) !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
 
-    /* Primary buttons */
-
     .stButton > button[kind="primary"] {
-        background: #16a5a5;
-        border-color: #16a5a5;
-        color: white;
+        background: var(--ub-cyan-dark) !important;
+        border: 1px solid var(--ub-cyan) !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
     }
 
     .stButton > button[kind="primary"]:hover {
-        background: #13b5b2;
-        border-color: #13b5b2;
+        background: #117f84 !important;
+        border-color: var(--ub-cyan-light) !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
     }
 
-    /* ========================================================
-       METRIC CARDS
-       ======================================================== */
+    /* ROUTE SELECTOR */
+    .stButton > button[aria-pressed="true"] {
+        background: var(--ub-cyan-dark) !important;
+        color: #ffffff !important;
+        border-color: var(--ub-cyan) !important;
+        box-shadow: none !important;
+    }
 
+    /* METRIC CARDS */
     div[data-testid="stMetric"] {
-        background: #0a353c;
-        border: 1px solid rgba(255,255,255,0.22);
-        border-radius: 14px;
-        padding: 20px 18px;
-        min-height: 125px;
+        background: var(--ub-surface) !important;
+        border: 1px solid var(--ub-border) !important;
+        border-radius: 15px !important;
+        padding: 19px 18px !important;
+        min-height: 120px;
+        box-shadow: none !important;
     }
 
     div[data-testid="stMetricLabel"] {
-        color: #b9cbce !important;
+        color: var(--ub-muted) !important;
+        font-weight: 600 !important;
     }
 
     div[data-testid="stMetricValue"] {
-        color: #ffffff !important;
+        color: var(--ub-text) !important;
         font-size: 27px !important;
-        font-weight: 750 !important;
+        font-weight: 760 !important;
     }
 
-    /* ========================================================
-       INPUTS
-       ======================================================== */
+    div[data-testid="stMetricDelta"] {
+        color: var(--ub-cyan-light) !important;
+    }
 
+    /* INPUTS */
     .stTextInput input,
-    .stSelectbox div[data-baseweb="select"],
-    .stRadio div[data-baseweb="radio"] {
-        background: #092f36 !important;
-        color: #ffffff !important;
-    }
-
-    .stTextInput input {
-        border: 1px solid rgba(255,255,255,0.20) !important;
+    .stSelectbox div[data-baseweb="select"] {
+        background: var(--ub-surface) !important;
+        color: var(--ub-text) !important;
+        border: 1px solid var(--ub-border) !important;
         border-radius: 10px !important;
     }
 
-    /* ========================================================
-       DATAFRAME
-       ======================================================== */
-
-    div[data-testid="stDataFrame"] {
-        border-radius: 14px;
-        overflow: hidden;
+    .stTextInput input::placeholder {
+        color: #75949b !important;
     }
 
-    /* ========================================================
-       MAP
-       ======================================================== */
-
-    iframe {
-        border-radius: 16px !important;
-        border: 1px solid rgba(255,255,255,0.15) !important;
+    .stTextInput input:focus {
+        border-color: var(--ub-cyan) !important;
+        box-shadow: none !important;
     }
 
-    /* ========================================================
-       ALERTS
-       ======================================================== */
+    div[data-baseweb="select"] * {
+        color: var(--ub-text) !important;
+    }
 
+    /* ALERTS */
     div[data-testid="stAlert"] {
-        border-radius: 12px;
+        background: var(--ub-green) !important;
+        border: 1px solid var(--ub-green-border) !important;
+        border-radius: 13px !important;
+        color: var(--ub-text) !important;
+        box-shadow: none !important;
+    }
+
+    div[data-testid="stAlert"] p,
+    div[data-testid="stAlert"] span {
+        color: var(--ub-text) !important;
+    }
+
+    /* PROGRESS */
+    div[data-testid="stProgressBar"] > div {
+        background: #12343b !important;
+        border-radius: 99px !important;
+    }
+
+    div[data-testid="stProgressBar"] > div > div {
+        background: var(--ub-cyan) !important;
+        border-radius: 99px !important;
     }
 
     /* ========================================================
-       MOBILE
+       WHITE ROUTE COMPARISON TABLE
+       Clean website-style table, no badges/glow.
        ======================================================== */
 
+    .ub-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        background: #ffffff;
+        border: 1px solid #d7e3e5;
+        border-radius: 13px;
+        box-shadow: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ub-route-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #ffffff;
+        color: #183f47;
+        font-size: 13px;
+    }
+
+    .ub-route-table thead th {
+        background: #f4f8f8;
+        color: #58767c;
+        padding: 13px 15px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .35px;
+        border-bottom: 1px solid #dbe6e8;
+        white-space: nowrap;
+    }
+
+    .ub-route-table tbody td {
+        background: #ffffff;
+        color: #234851;
+        padding: 14px 15px;
+        border-bottom: 1px solid #e5edef;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .ub-route-table tbody tr:nth-child(even) td {
+        background: #fbfcfc;
+    }
+
+    .ub-route-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .ub-route-table tbody tr:hover td {
+        background: #f7fafa;
+    }
+
+    .ub-route-name {
+        color: #173c44;
+        font-weight: 700;
+    }
+
+    .ub-type-badge,
+    .ub-score {
+        display: inline;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: #32747b;
+        font-weight: 650;
+    }
+
+    .ub-table-scroll-hint {
+        display: none;
+        color: #77939a;
+        font-size: 10px;
+        margin-top: 7px;
+    }
+
+    /* MAP */
+    iframe {
+        border-radius: 15px !important;
+        border: 1px solid var(--ub-border) !important;
+    }
+
+    /* CHATBOT — RIGHT SIDE */
+    div.st-key-ub_chat_toggle {
+        position: fixed !important;
+        right: 22px !important;
+        left: auto !important;
+        bottom: 22px !important;
+        width: 60px !important;
+        z-index: 99999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    div.st-key-ub_chat_toggle button {
+        width: 58px !important;
+        height: 58px !important;
+        min-width: 58px !important;
+        min-height: 58px !important;
+        max-width: 58px !important;
+        max-height: 58px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: var(--ub-cyan-dark) !important;
+        color: #ffffff !important;
+        border: 2px solid #d8f7f8 !important;
+        box-shadow: none !important;
+        font-size: 20px !important;
+    }
+
+    div.st-key-ub_chat_toggle button:hover {
+        background: #117f84 !important;
+        border-color: #ffffff !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_panel {
+        position: fixed !important;
+        right: 22px !important;
+        bottom: 94px !important;
+        width: 365px !important;
+        max-width: calc(100vw - 30px) !important;
+        max-height: calc(100vh - 120px) !important;
+        z-index: 99998 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: var(--ub-bg) !important;
+        border: 1px solid var(--ub-border) !important;
+        border-radius: 16px !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_header {
+        background: #0d555c !important;
+        padding: 13px !important;
+        margin: 0 !important;
+        border-radius: 15px 15px 0 0 !important;
+    }
+
+    div.st-key-ub_chat_header div[data-testid="stButton"] button {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #ffffff !important;
+    }
+
+    .ub-ai-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #dffafb;
+        color: #087c83;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 850;
+        margin-right: 9px;
+    }
+
+    .ub-ai-name {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 750;
+    }
+
+    .ub-ai-status {
+        color: rgba(255,255,255,.8);
+        font-size: 11px;
+        margin-top: 3px;
+    }
+
+    div.st-key-ub_chat_body {
+        background: #061f26 !important;
+        padding: 10px 12px !important;
+        max-height: 420px !important;
+        overflow-y: auto !important;
+    }
+
+    div.st-key-ub_chat_body div[data-testid="stChatMessageContent"] {
+        background: var(--ub-surface) !important;
+        color: var(--ub-text) !important;
+        border: 1px solid var(--ub-border) !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_body div[data-testid="stChatMessage"] p {
+        color: var(--ub-text) !important;
+    }
+
+    div.st-key-ub_chat_quick button {
+        background: transparent !important;
+        color: var(--ub-cyan-light) !important;
+        border: 1px solid #2b747a !important;
+        border-radius: 18px !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_quick button:hover {
+        background: #103d45 !important;
+        color: #ffffff !important;
+        border-color: var(--ub-cyan) !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_composer {
+        background: var(--ub-bg) !important;
+        border-top: 1px solid var(--ub-border) !important;
+        padding: 8px 10px 10px !important;
+    }
+
+    div.st-key-ub_chat_composer input {
+        background: var(--ub-surface) !important;
+        color: #ffffff !important;
+        border: 1px solid var(--ub-border) !important;
+        border-radius: 20px !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_composer input:focus {
+        border-color: var(--ub-cyan) !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-ub_chat_composer div[data-testid="stButton"] button {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: var(--ub-cyan-dark) !important;
+        color: #ffffff !important;
+        border-color: var(--ub-cyan) !important;
+        box-shadow: none !important;
+    }
+
+    .ub-chat-footer {
+        text-align: center;
+        color: #64858c;
+        font-size: 9px;
+        padding-top: 4px;
+    }
+
+    /* MOBILE */
     @media (max-width: 768px) {
-
         .main .block-container {
-            padding-left: 16px;
-            padding-right: 16px;
-            padding-top: 0.5rem;
-        }
-
-        .navbar-title {
-            font-size: 18px;
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: .5rem;
+            overflow-x: hidden;
         }
 
         h1 {
-            font-size: 30px !important;
+            font-size: 29px !important;
         }
 
         h2 {
@@ -234,20 +520,42 @@ st.markdown(
         }
 
         h3 {
-            font-size: 20px !important;
+            font-size: 19px !important;
         }
 
         div[data-testid="stMetric"] {
-            padding: 15px;
-            min-height: 105px;
+            min-height: 100px;
+            padding: 15px !important;
         }
 
         div[data-testid="stMetricValue"] {
             font-size: 21px !important;
         }
 
-        .stButton > button {
-            min-height: 42px;
+        .ub-route-table {
+            min-width: 720px;
+        }
+
+        .ub-route-table thead th,
+        .ub-route-table tbody td {
+            padding: 12px 11px;
+        }
+
+        .ub-table-scroll-hint {
+            display: block;
+        }
+
+        div.st-key-ub_chat_toggle {
+            right: 14px !important;
+            bottom: 14px !important;
+        }
+
+        div.st-key-ub_chat_panel {
+            left: 10px !important;
+            right: 10px !important;
+            bottom: 80px !important;
+            width: auto !important;
+            max-width: none !important;
         }
     }
 
@@ -255,6 +563,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
 
 
 # ============================================================
@@ -528,6 +838,29 @@ destination_coords = st.session_state.get(
 
 
 # ============================================================
+# AI CHAT STATE
+# ============================================================
+
+if "ub_chat_open" not in st.session_state:
+    st.session_state.ub_chat_open = False
+
+if "ub_chat_messages" not in st.session_state:
+    st.session_state.ub_chat_messages = [
+        {
+            "role": "assistant",
+            "content": (
+                "Hi! I'm UrbanBreeze AI. "
+                "Ask me about this route, its temperature, "
+                "Cool Score, travel time, or why a route was recommended."
+            ),
+        }
+    ]
+
+if "ub_chat_interaction_id" not in st.session_state:
+    st.session_state.ub_chat_interaction_id = None
+
+
+# ============================================================
 # NAVBAR
 # ============================================================
 
@@ -549,8 +882,8 @@ with nav_plan:
 
     if st.button(
         "Plan Route",
-        use_container_width=True,
-        key="nav_plan_route_btn"
+        key="navbar_plan_route",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -562,8 +895,8 @@ with nav_saved:
 
     if st.button(
         "Saved Places",
-        use_container_width=True,
-        key="nav_saved_places_btn"
+        key="navbar_saved_places",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -575,8 +908,8 @@ with nav_history:
 
     if st.button(
         "History",
-        use_container_width=True,
-        key="nav_history_btn"
+        key="navbar_history",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -587,9 +920,9 @@ with nav_history:
 with nav_profile:
 
     if st.button(
-        "◯ Profile",
-        use_container_width=True,
-        key="nav_profile_btn"
+        "♟",
+        key="navbar_profile",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -597,10 +930,7 @@ with nav_profile:
         )
 
 
-st.markdown(
-    '<div class="navbar-divider"></div>',
-    unsafe_allow_html=True
-)
+st.divider()
 
 
 # ============================================================
@@ -620,8 +950,8 @@ if start_coords is None:
 
     if st.button(
         "← Back to Plan Route",
-        type="primary",
-        key="missing_start_back_btn"
+        key="missing_start_back",
+        type="primary"
     ):
 
         st.switch_page(
@@ -644,8 +974,8 @@ if destination_coords is None:
 
     if st.button(
         "← Back to Plan Route",
-        type="primary",
-        key="missing_dest_back_btn"
+        key="missing_destination_back",
+        type="primary"
     ):
 
         st.switch_page(
@@ -728,7 +1058,7 @@ if (
 
         if st.button(
             "← Try another route",
-            key="no_route_try_again_btn"
+            key="try_another_route"
         ):
 
             st.switch_page(
@@ -870,6 +1200,7 @@ with route_col1:
 
     if st.button(
         "AI Recommended",
+        key="select_ai_route",
         use_container_width=True,
         type=(
             "primary"
@@ -878,8 +1209,7 @@ with route_col1:
             == "ai"
             else
             "secondary"
-        ),
-        key="select_route_ai_btn"
+        )
     ):
 
         st.session_state.selected_route_type = (
@@ -893,6 +1223,7 @@ with route_col2:
 
     if st.button(
         "Fastest",
+        key="select_fastest_route",
         use_container_width=True,
         type=(
             "primary"
@@ -901,8 +1232,7 @@ with route_col2:
             == "fastest"
             else
             "secondary"
-        ),
-        key="select_route_fastest_btn"
+        )
     ):
 
         st.session_state.selected_route_type = (
@@ -916,6 +1246,7 @@ with route_col3:
 
     if st.button(
         "Coolest",
+        key="select_coolest_route",
         use_container_width=True,
         type=(
             "primary"
@@ -924,8 +1255,7 @@ with route_col3:
             == "coolest"
             else
             "secondary"
-        ),
-        key="select_route_coolest_btn"
+        )
     ):
 
         st.session_state.selected_route_type = (
@@ -1246,8 +1576,7 @@ if geometry:
 
         height=520,
 
-        returned_objects=[],
-        key="route_results_map"
+        returned_objects=[]
     )
 
 
@@ -1255,6 +1584,49 @@ else:
 
     st.warning(
         "Route geometry is unavailable."
+    )
+
+
+# ============================================================
+# START JOURNEY
+# ============================================================
+
+st.markdown("### Journey")
+
+if "journey_started" not in st.session_state:
+    st.session_state.journey_started = False
+
+journey_col1, journey_col2 = st.columns([2, 1])
+
+with journey_col1:
+    if st.button(
+        "Start Journey",
+        key="start_journey",
+        type="primary",
+        use_container_width=True,
+    ):
+        st.session_state.journey_started = True
+        st.session_state.navigation_route = selected_route
+        st.rerun()
+
+with journey_col2:
+    if st.session_state.get("journey_started"):
+        if st.button(
+            "End Journey",
+            key="end_journey",
+            use_container_width=True,
+        ):
+            st.session_state.journey_started = False
+            st.session_state.pop(
+                "navigation_route",
+                None,
+            )
+            st.rerun()
+
+
+if st.session_state.get("journey_started"):
+    st.success(
+        "Journey started. Follow the selected route on the map."
     )
 
 
@@ -1475,13 +1847,56 @@ comparison_df = pd.DataFrame(
     table_rows
 )
 
+# Build a responsive custom table so the visual styling is consistent
+# across Streamlit versions and matches the UrbanBreeze dark-teal UI.
+table_html = """
+<div class="ub-table-wrap">
+<table class="ub-route-table">
+<thead>
+<tr>
+    <th>Route</th>
+    <th>Type</th>
+    <th>Time</th>
+    <th>Distance</th>
+    <th>Avg Temp</th>
+    <th>Cool Score</th>
+    <th>AI Score</th>
+</tr>
+</thead>
+<tbody>
+"""
 
-st.dataframe(
-    comparison_df,
+for row in table_rows:
+    route_name = html.escape(str(row["Route"]))
+    route_type = html.escape(str(row["Type"]))
+    time_value = html.escape(str(row["Time"]))
+    distance_value = html.escape(str(row["Distance"]))
+    temp_value = html.escape(str(row["Avg Temp"]))
+    cool_value = html.escape(str(row["Cool Score"]))
+    ai_value = html.escape(str(row["AI Score"]))
 
-    use_container_width=True,
+    table_html += f"""
+<tr>
+    <td><span class="ub-route-name">{route_name}</span></td>
+    <td><span class="ub-type-badge">{route_type}</span></td>
+    <td>{time_value}</td>
+    <td>{distance_value}</td>
+    <td>{temp_value}</td>
+    <td><span class="ub-score">{cool_value}</span></td>
+    <td><span class="ub-score">{ai_value}</span></td>
+</tr>
+"""
 
-    hide_index=True
+table_html += """
+</tbody>
+</table>
+</div>
+<div class="ub-table-scroll-hint">Swipe horizontally to view the full table →</div>
+"""
+
+st.markdown(
+    table_html,
+    unsafe_allow_html=True,
 )
 
 
@@ -1516,6 +1931,266 @@ if cool_score is not None:
     )
 
 
+
+
+
+# ============================================================
+# URBANBREEZE AI CHATBOT
+# ============================================================
+
+# Floating launcher
+with st.container(key="ub_chat_toggle"):
+    if st.button(
+        "✦",
+        key="ub_open_chat",
+        help="Open UrbanBreeze AI",
+    ):
+        st.session_state.ub_chat_open = (
+            not st.session_state.ub_chat_open
+        )
+        st.rerun()
+
+
+if st.session_state.ub_chat_open:
+
+    route_context = build_route_context(
+        start_location=start_location,
+        destination=destination,
+        travel_mode=travel_mode,
+        selected_route=selected_route,
+        route_title=route_title,
+        routes=routes,
+    )
+
+    with st.container(key="ub_chat_panel"):
+
+        # -----------------------------
+        # Header
+        # -----------------------------
+        with st.container(key="ub_chat_header"):
+
+            header_left, header_menu, header_close = st.columns(
+                [7, 1, 1],
+                gap="small",
+            )
+
+            with header_left:
+                st.markdown(
+                    """
+                    <div style="display:flex;align-items:center;">
+                        <div class="ub-ai-avatar">UB</div>
+                        <div>
+                            <div class="ub-ai-name">UrbanBreeze AI</div>
+                            <div class="ub-ai-status">
+                                Climate & route assistant
+                            </div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            with header_menu:
+                if st.button(
+                    "⋮",
+                    key="ub_chat_menu",
+                    help="Clear conversation",
+                ):
+                    st.session_state.ub_chat_messages = [
+                        {
+                            "role": "assistant",
+                            "content": (
+                                "Hi! I'm your UrbanBreeze AI assistant. "
+                                "I can help you understand your route, "
+                                "temperature, travel time and Cool Score."
+                            ),
+                        }
+                    ]
+                    st.session_state.ub_chat_interaction_id = None
+                    st.rerun()
+
+            with header_close:
+                if st.button(
+                    "×",
+                    key="ub_close_chat",
+                    help="Close chatbot",
+                ):
+                    st.session_state.ub_chat_open = False
+                    st.rerun()
+
+        # -----------------------------
+        # Conversation
+        # -----------------------------
+        with st.container(key="ub_chat_body"):
+
+            for message in st.session_state.ub_chat_messages[-8:]:
+
+                # Streamlit avatars must be an image, emoji, or a supported
+                # avatar value. Text such as "UB" is NOT a valid avatar.
+                # Emoji avatars keep the interface compact and reliable.
+                avatar = (
+                    "🤖"
+                    if message["role"] == "assistant"
+                    else "👤"
+                )
+
+                with st.chat_message(
+                    message["role"],
+                    avatar=avatar,
+                ):
+                    st.write(message["content"])
+
+            # Quick replies appear near the beginning of the chat.
+            if len(st.session_state.ub_chat_messages) <= 1:
+
+                st.markdown(
+                    '<div class="ub-quick-title">Quick questions</div>',
+                    unsafe_allow_html=True,
+                )
+
+                with st.container(key="ub_chat_quick"):
+
+                    quick_1, quick_2 = st.columns(2)
+                    quick_3, quick_4 = st.columns(2)
+
+                    quick_questions = [
+                        "Which route is coolest?",
+                        "Why was this route recommended?",
+                        "What is the route temperature?",
+                        "How long is this journey?",
+                    ]
+
+                    with quick_1:
+                        q1 = st.button(
+                            quick_questions[0],
+                            key="ub_quick_0",
+                            use_container_width=True,
+                        )
+
+                    with quick_2:
+                        q2 = st.button(
+                            quick_questions[1],
+                            key="ub_quick_1",
+                            use_container_width=True,
+                        )
+
+                    with quick_3:
+                        q3 = st.button(
+                            quick_questions[2],
+                            key="ub_quick_2",
+                            use_container_width=True,
+                        )
+
+                    with quick_4:
+                        q4 = st.button(
+                            quick_questions[3],
+                            key="ub_quick_3",
+                            use_container_width=True,
+                        )
+
+                selected_quick = None
+
+                if q1:
+                    selected_quick = quick_questions[0]
+                elif q2:
+                    selected_quick = quick_questions[1]
+                elif q3:
+                    selected_quick = quick_questions[2]
+                elif q4:
+                    selected_quick = quick_questions[3]
+
+                if selected_quick:
+                    st.session_state.ub_chat_input = selected_quick
+                    st.rerun()
+
+        # -----------------------------
+        # Composer
+        # -----------------------------
+        with st.container(key="ub_chat_composer"):
+
+            if "ub_chat_input" not in st.session_state:
+                st.session_state.ub_chat_input = ""
+
+            input_col, send_col = st.columns(
+                [7, 1],
+                gap="small",
+            )
+
+            with input_col:
+                user_question = st.text_input(
+                    "Ask UrbanBreeze AI",
+                    key="ub_chat_input",
+                    label_visibility="collapsed",
+                    placeholder="Ask about your route...",
+                )
+
+            with send_col:
+                send_chat = st.button(
+                    "➤",
+                    key="ub_send_chat",
+                    help="Send",
+                )
+
+            st.markdown(
+                '<div class="ub-chat-footer">UrbanBreeze AI</div>',
+                unsafe_allow_html=True,
+            )
+
+        # -----------------------------
+        # Send message
+        # -----------------------------
+        if send_chat and user_question.strip():
+
+            question = user_question.strip()
+
+            st.session_state.ub_chat_messages.append(
+                {
+                    "role": "user",
+                    "content": question,
+                }
+            )
+
+            try:
+
+                with st.spinner(
+                    "UrbanBreeze AI is thinking..."
+                ):
+
+                    answer, interaction_id = ask_gemini(
+                        message=question,
+                        route_context=route_context,
+                        previous_interaction_id=(
+                            st.session_state.ub_chat_interaction_id
+                        ),
+                    )
+
+                st.session_state.ub_chat_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                    }
+                )
+
+                st.session_state.ub_chat_interaction_id = (
+                    interaction_id
+                )
+
+            except Exception:
+
+                st.session_state.ub_chat_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": (
+                            "I couldn't connect to the AI service right now. "
+                            "Please check your Gemini API key and connection."
+                        ),
+                    }
+                )
+
+            st.session_state.ub_chat_input = ""
+            st.rerun()
+
+
 # ============================================================
 # NAVIGATION
 # ============================================================
@@ -1530,8 +2205,8 @@ with back_col:
 
     if st.button(
         "← Plan another route",
-        use_container_width=True,
-        key="bottom_plan_another_route_btn"
+        key="bottom_plan_another_route",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -1543,8 +2218,8 @@ with history_col:
 
     if st.button(
         "View route history",
-        use_container_width=True,
-        key="bottom_view_history_btn"
+        key="bottom_view_history",
+        use_container_width=True
     ):
 
         st.switch_page(
@@ -1556,8 +2231,8 @@ with plan_col:
 
     if st.button(
         "Saved Places",
-        use_container_width=True,
-        key="bottom_saved_places_btn"
+        key="bottom_saved_places",
+        use_container_width=True
     ):
 
         st.switch_page(
