@@ -798,14 +798,15 @@ for route in routes:
 
     label = " / ".join(labels)
 
+    if not label:
+        label = "Alternative Route"
 
     table_rows.append({
-
         "Route":
             f"Route {route_number}",
 
         "Type":
-            label or "Alternative",
+            label,
 
         "Time":
             f"{route['duration_min']:.0f} min",
