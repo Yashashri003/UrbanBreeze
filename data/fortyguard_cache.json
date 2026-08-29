@@ -1,0 +1,200 @@
+{
+  "7ac518d4c662ade1b388a2b30ec790d77fd0090266ee8bb58300a8c0dd058064": {
+    "success": true,
+    "temperature": 18.914055529131986,
+    "minimum": 17.0194,
+    "maximum": 20.6898,
+    "activity_id": "5d418fd3-c6ac-4ad8-a775-ccfc4e49eee2",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.78748,
+    "longitude": -122.407426
+  },
+  "fd161aa10d128013ac30a26c83308a40199be067aaa26d317da3826becdef9d0": {
+    "success": true,
+    "temperature": 18.311145205479455,
+    "minimum": 16.8308,
+    "maximum": 20.8226,
+    "activity_id": "b8f13948-d269-443e-af29-5d3ecb6e6e96",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.785718,
+    "longitude": -122.391334
+  },
+  "c21362d70aca4adbc13efbb0f4aa500dd7064424b060152cd4d11afb98bb4038": {
+    "success": true,
+    "temperature": 17.31333867276888,
+    "minimum": 16.6358,
+    "maximum": 18.4406,
+    "activity_id": "2f122b84-2796-4468-ac1a-d5e0cbb08ae0",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.824787,
+    "longitude": -122.306693
+  },
+  "ac969c48666875c2910c07877ac177124ae927fb300aba6a69c3d79a84e615d0": {
+    "success": true,
+    "temperature": 18.477657078142695,
+    "minimum": 17.326,
+    "maximum": 20.6314,
+    "activity_id": "e06f63b8-72eb-4e1a-a776-f52d60a4bec8",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.822897,
+    "longitude": -122.277326
+  },
+  "ecbba14326cdc5fabcda2f2bd60625c13935d02643def1292b0453b6ed1817e7": {
+    "success": true,
+    "temperature": 19.750097771952817,
+    "minimum": 17.6899,
+    "maximum": 21.074,
+    "activity_id": "0a9499cb-0ca7-463d-a0f3-933cee6be018",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.804399,
+    "longitude": -122.271392
+  },
+  "1149e45a8c3a0df9f31cc2c8323b3d587d419fdc3b53a6cd74e65f66435b9fa5": {
+    "success": true,
+    "temperature": 17.094174444444445,
+    "minimum": 16.9669,
+    "maximum": 17.2499,
+    "activity_id": "70640da4-10fe-4b08-909b-76816cf86879",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.81762,
+    "longitude": -122.478263
+  },
+  "425abb621cf980586d635fff6a5cd0b66501a604778c8af9f59836768df0da10": {
+    "success": true,
+    "temperature": 17.208294725274726,
+    "minimum": 16.8973,
+    "maximum": 17.6177,
+    "activity_id": "1dfb2f52-4daf-4d7a-a5f2-185b0647e76a",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.802822,
+    "longitude": -122.468987
+  },
+  "1a823360669b967f37ceedd0d7d8a4ae80cb6872fef0b815880aa166668a51eb": {
+    "success": true,
+    "temperature": 18.86524994388328,
+    "minimum": 17.0374,
+    "maximum": 20.4423,
+    "activity_id": "652bb108-6489-4c7d-b140-ace278353525",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.790909,
+    "longitude": -122.418141
+  },
+  "f15f16f7c5d2b1fcb639e1ac71b7f8a9e026d573cf9e80061d921675c8532a32": {
+    "success": true,
+    "temperature": 16.822555862068967,
+    "minimum": 16.8046,
+    "maximum": 16.9804,
+    "activity_id": "a01abfe5-d824-4e63-a761-01dd26809134",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.822607,
+    "longitude": -122.320702
+  },
+  "87199b3c0287692e6fa67e4b068e78d2ea10aaa37b07beb93cefb2bd5cc3ff9e": {
+    "success": true,
+    "temperature": 19.750097771952817,
+    "minimum": 17.6899,
+    "maximum": 21.074,
+    "activity_id": "00d9e781-c370-4921-8a3d-93619e5becea",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 37.80432,
+    "longitude": -122.271189
+  },
+  "a81359ec5bb71ba34ca674130f1f8759f5d9470d0dd329d21c4842f537b5d4a0": {
+    "success": true,
+    "temperature": 32.01548863879957,
+    "minimum": 30.6958,
+    "maximum": 33.1328,
+    "activity_id": "face8c1a-0948-42f7-8f89-105fc5875962",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 34.036686,
+    "longitude": -118.257788
+  },
+  "d7dc4f5049ea31426019f32d2fcdc57b64812f270127fb964d61c7f4e1af9b61": {
+    "success": true,
+    "temperature": 32.67872697368421,
+    "minimum": 31.4495,
+    "maximum": 33.3367,
+    "activity_id": "5f4596e3-f935-4c4f-bce8-bd497a82e862",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 34.027569,
+    "longitude": -118.231876
+  },
+  "83eb9a96b76c092f4907bbda56a8d11063d8351116324dbbb96a22b96730cfa2": {
+    "success": true,
+    "temperature": 33.81877261363636,
+    "minimum": 32.9622,
+    "maximum": 34.434,
+    "activity_id": "b484bb46-7a77-45be-af60-d2c4394989d6",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 34.020084,
+    "longitude": -118.183633
+  },
+  "8b0b11417a51a93902641399677ef24f5f6407b668bdc643b86341e5733ef059": {
+    "success": true,
+    "temperature": 33.303909714285716,
+    "minimum": 32.7345,
+    "maximum": 34.0202,
+    "activity_id": "5bbaec32-39a8-46f6-93bb-3dd1d44f2d67",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 33.985153,
+    "longitude": -118.169078
+  },
+  "76cebec2ffe801fd806b08c1bc4cc5098f4b65f2a14bcf7a1c8fe9b269b3209d": {
+    "success": true,
+    "temperature": 32.77964723726977,
+    "minimum": 31.9026,
+    "maximum": 33.4533,
+    "activity_id": "2503806d-5e21-444f-a00f-2ed743a22ec0",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 33.971425,
+    "longitude": -118.180101
+  },
+  "242e65742d33a906242643e72536280e5cbef4690e258d37f4ade83bd5b515c1": {
+    "success": true,
+    "temperature": 32.55884075723831,
+    "minimum": 31.4495,
+    "maximum": 33.3367,
+    "activity_id": "f49f861b-bb89-40d3-b3f7-a8496c99f1b3",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 34.026295,
+    "longitude": -118.234214
+  },
+  "02b7d269e0d548961e88873d68f288051cb3fec36bfdae882dc0bbfd58bcd783": {
+    "success": true,
+    "temperature": 33.13887942643392,
+    "minimum": 32.3538,
+    "maximum": 34.0023,
+    "activity_id": "ea7cb710-f775-4ac9-8f39-09d41f59e4c8",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 34.014757,
+    "longitude": -118.208169
+  },
+  "6c0fa0237d9b7af272845fe109d2b534d6faa95e37ad627e78628585bab5fc0f": {
+    "success": true,
+    "temperature": 32.37522983606557,
+    "minimum": 30.9518,
+    "maximum": 33.1613,
+    "activity_id": "92b41ea8-c9d9-47ca-91a4-6c4d83f2f6de",
+    "date": "2024-07-15",
+    "time": "14:00",
+    "latitude": 33.981045,
+    "longitude": -118.202598
+  }
+}
