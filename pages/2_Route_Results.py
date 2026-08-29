@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import folium
 
 from streamlit_folium import st_folium
@@ -7,24 +8,24 @@ from utils.routing import get_routes
 
 from utils.climate import (
     analyze_route_temperature,
-    compare_routes
+    compare_routes,
 )
 
 
-# ============================================
-# PAGE CONFIGURATION
-# ============================================
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
-    page_title="Route Results | UrbanBreeze",
-    page_icon="🗺️",
-    layout="wide"
+    page_title="UrbanBreeze - Route Results",
+    page_icon="🌿",
+    layout="wide",
 )
 
 
-# ============================================
+# ============================================================
 # CSS
-# ============================================
+# ============================================================
 
 st.markdown(
     """
@@ -36,44 +37,46 @@ st.markdown(
 
     .block-container {
         padding-top: 2rem;
-        padding-left: 4%;
-        padding-right: 4%;
+        padding-left: 5%;
+        padding-right: 5%;
         padding-bottom: 4rem;
     }
 
-    /* Route cards */
-    .route-card {
-        background-color: white;
+    .route-hero {
+        background: white;
         border: 1px solid #e3edef;
-        border-radius: 18px;
-        padding: 22px;
-        margin-bottom: 15px;
-        box-shadow: 0px 4px 15px rgba(18, 63, 75, 0.05);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 20px;
     }
 
-    .ai-card {
+    .ai-box {
         background-color: #e9f7f6;
         border: 2px solid #159c9c;
         border-radius: 18px;
-        padding: 22px;
-        margin-bottom: 15px;
-        box-shadow: 0px 6px 20px rgba(21, 156, 156, 0.08);
+        padding: 20px;
+        margin-bottom: 20px;
     }
 
-    .small-label {
-        color: #71858b;
-        font-size: 0.85rem;
+    .stButton > button {
+        border-radius: 12px;
+        min-height: 48px;
+        font-weight: 650;
+    }
+
+    iframe {
+        border-radius: 18px !important;
     }
 
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
-# ============================================
-# GET USER DATA
-# ============================================
+# ============================================================
+# GET USER DATA FROM PLAN ROUTE
+# ============================================================
 
 start_location = st.session_state.get(
     "start_location",
@@ -95,21 +98,6 @@ prefer_cooler = st.session_state.get(
     True
 )
 
-max_extra_time = st.session_state.get(
-    "max_extra_time",
-    5
-)
-
-prefer_charging = st.session_state.get(
-    "prefer_charging",
-    False
-)
-
-
-# ============================================
-# GET EXACT COORDINATES
-# ============================================
-
 start_coords = st.session_state.get(
     "start_coords"
 )
@@ -119,9 +107,9 @@ destination_coords = st.session_state.get(
 )
 
 
-# ============================================
-# CHECK START COORDINATES
-# ============================================
+# ============================================================
+# CHECK COORDINATES
+# ============================================================
 
 if start_coords is None:
 
@@ -130,23 +118,18 @@ if start_coords is None:
     )
 
     st.info(
-        "Please return to Plan Route and "
-        "select a California starting location."
+        "Please return to Plan Route and select "
+        "a starting location."
     )
 
-    if st.button(
-        "← Go back to Plan Route"
-    ):
+    if st.button("← Back to Plan Route"):
+
         st.switch_page(
             "pages/1_Plan_Route.py"
         )
 
     st.stop()
 
-
-# ============================================
-# CHECK DESTINATION COORDINATES
-# ============================================
 
 if destination_coords is None:
 
@@ -155,13 +138,12 @@ if destination_coords is None:
     )
 
     st.info(
-        "Please return to Plan Route and "
-        "select a California destination."
+        "Please return to Plan Route and select "
+        "a destination."
     )
 
-    if st.button(
-        "← Go back to Plan Route"
-    ):
+    if st.button("← Back to Plan Route"):
+
         st.switch_page(
             "pages/1_Plan_Route.py"
         )
@@ -169,61 +151,13 @@ if destination_coords is None:
     st.stop()
 
 
-# ============================================
-# NAVIGATION
-# ============================================
+# ============================================================
+# PAGE HEADER
+# ============================================================
 
-nav1, nav2, nav3, nav4 = st.columns(
-    [4, 1, 1, 1]
-)
+st.title("🌿 UrbanBreeze")
 
-with nav1:
-
-    st.markdown(
-        "## 🌬️ UrbanBreeze"
-    )
-
-with nav2:
-
-    if st.button(
-        "Home",
-        use_container_width=True
-    ):
-        st.switch_page(
-            "app.py"
-        )
-
-with nav3:
-
-    if st.button(
-        "Plan Route",
-        use_container_width=True
-    ):
-        st.switch_page(
-            "pages/1_Plan_Route.py"
-        )
-
-with nav4:
-
-    if st.button(
-        "History",
-        use_container_width=True
-    ):
-        st.switch_page(
-            "pages/4_Route_History.py"
-        )
-
-
-st.divider()
-
-
-# ============================================
-# PAGE TITLE
-# ============================================
-
-st.title(
-    "🗺️ Smart Route Results"
-)
+st.subheader("Climate-aware route results")
 
 st.write(
     f"**{start_location}** → **{destination}**"
@@ -234,110 +168,164 @@ st.caption(
 )
 
 
-# ============================================
-# CALCULATE ROUTES
-# ============================================
+# ============================================================
+# CREATE A UNIQUE CACHE KEY
+# ============================================================
+#
+# IMPORTANT:
+#
+# Streamlit reruns the whole page whenever a button
+# is clicked.
+#
+# We DO NOT want every button click to call FortyGuard
+# again.
+#
+# Therefore route/climate results are stored in
+# session_state.
+# ============================================================
 
-with st.spinner(
-    "Finding the best route options..."
+cache_key = (
+    f"{start_coords['lat']:.6f}_"
+    f"{start_coords['lon']:.6f}_"
+    f"{destination_coords['lat']:.6f}_"
+    f"{destination_coords['lon']:.6f}_"
+    f"{travel_mode}"
+)
+
+
+# ============================================================
+# GENERATE REAL ROUTES + CLIMATE DATA
+# ============================================================
+
+if (
+    "route_results_cache" not in st.session_state
+    or
+    st.session_state.route_results_cache.get(
+        "key"
+    ) != cache_key
 ):
 
-    routes = get_routes(
-        start_coords,
-        destination_coords,
-        travel_mode
-    )
-
-
-# ============================================
-# CHECK ROUTES
-# ============================================
-
-if not routes:
-
-    st.error(
-        "We could not calculate a route "
-        "between these locations."
-    )
-
-    st.info(
-        "Please try another California "
-        "starting point or destination."
-    )
-
-    if st.button(
-        "← Try another route"
-    ):
-        st.switch_page(
-            "pages/1_Plan_Route.py"
-        )
-
-    st.stop()
-
-
-# ============================================
-# BASIC ROUTE INFORMATION
-# ============================================
-
-fastest_route = min(
-    routes,
-    key=lambda route: route["duration_min"]
-)
-
-shortest_route = min(
-    routes,
-    key=lambda route: route["distance_km"]
-)
-
-
-# ============================================
-# CLIMATE ANALYSIS
-# ============================================
-
-st.subheader(
-    "🌡️ Climate analysis"
-)
-
-st.caption(
-    "Analyzing temperature along your "
-    "California routes using FortyGuard."
-)
-
-
-for index, route in enumerate(routes):
+    # --------------------------------------------------------
+    # REAL OSRM ROUTES
+    # --------------------------------------------------------
 
     with st.spinner(
-        f"Analyzing route {index + 1}..."
+        "🗺️ Finding real route options..."
     ):
+
+        routes = get_routes(
+            start_coords,
+            destination_coords,
+            travel_mode
+        )
+
+
+    if not routes:
+
+        st.error(
+            "Could not find a route between "
+            "these locations."
+        )
+
+        if st.button(
+            "← Try another route"
+        ):
+
+            st.switch_page(
+                "pages/1_Plan_Route.py"
+            )
+
+        st.stop()
+
+
+    # --------------------------------------------------------
+    # REAL FORTYGUARD CLIMATE ANALYSIS
+    # --------------------------------------------------------
+
+    progress = st.progress(
+        0,
+        text="🌡️ Analyzing route temperatures..."
+    )
+
+    total_routes = len(routes)
+
+
+    for index, route in enumerate(routes):
 
         climate_result = analyze_route_temperature(
             route,
             number_of_points=5
         )
 
-    route["climate"] = climate_result
+        route["climate"] = climate_result
+
+        progress.progress(
+            (index + 1) / total_routes,
+            text=(
+                f"🌡️ Analyzed route "
+                f"{index + 1}/{total_routes}"
+            )
+        )
 
 
-# ============================================
-# COMPARE ROUTES
-# ============================================
+    progress.empty()
 
-route_comparison = compare_routes(
-    routes,
-    prefer_cooler=prefer_cooler
+
+    # --------------------------------------------------------
+    # REAL ROUTE COMPARISON
+    # --------------------------------------------------------
+
+    comparison = compare_routes(
+        routes,
+        prefer_cooler=prefer_cooler
+    )
+
+
+    # --------------------------------------------------------
+    # SAVE RESULTS
+    # --------------------------------------------------------
+
+    st.session_state.route_results_cache = {
+
+        "key": cache_key,
+
+        "routes": routes,
+
+        "comparison": comparison
+    }
+
+
+# ============================================================
+# LOAD CACHED RESULTS
+# ============================================================
+
+cached = st.session_state.route_results_cache
+
+routes = cached["routes"]
+
+comparison = cached["comparison"]
+
+
+# ============================================================
+# GET ROUTE TYPES
+# ============================================================
+
+fastest_route = comparison.get(
+    "fastest"
+)
+
+coolest_route = comparison.get(
+    "coolest"
+)
+
+ai_pick = comparison.get(
+    "ai_pick"
 )
 
 
-fastest_route = route_comparison["fastest"]
-
-coolest_route = route_comparison["coolest"]
-
-ai_pick = route_comparison["ai_pick"]
-
-
-# ============================================
-# SAFETY CHECK
-# ============================================
+# ============================================================
+# SAFETY
+# ============================================================
 
 if fastest_route is None:
 
@@ -353,155 +341,258 @@ if ai_pick is None:
     ai_pick = fastest_route
 
 
-# ============================================
-# ROUTE TYPES
-# ============================================
+# ============================================================
+# INITIAL ROUTE
+# ============================================================
+#
+# AI Recommended is selected initially.
+# ============================================================
 
-for route in routes:
+if "selected_route_type" not in st.session_state:
 
-    route["type"] = "Alternative"
-
-    if (
-        route["route_number"]
-        == fastest_route["route_number"]
-    ):
-
-        route["type"] = "Fastest"
-
-    elif (
-        route["route_number"]
-        == shortest_route["route_number"]
-    ):
-
-        route["type"] = "Shortest"
+    st.session_state.selected_route_type = "ai"
 
 
-# ============================================
-# CLIMATE LABELS
-# ============================================
+# ============================================================
+# ROUTE SELECTOR
+# ============================================================
 
-for route in routes:
-
-    route["climate_label"] = ""
-
-    if coolest_route:
-
-        if (
-            route["route_number"]
-            == coolest_route["route_number"]
-        ):
-
-            route["climate_label"] = "🥶 Coolest"
-
-
-# ============================================
-# SUMMARY
-# ============================================
+st.markdown("---")
 
 st.subheader(
-    "Your route options"
+    "Choose your route"
 )
 
 col1, col2, col3 = st.columns(3)
 
+
 with col1:
 
-    st.metric(
-        "⚡ Fastest",
-        f"{fastest_route['duration_min']:.0f} min"
-    )
+    if st.button(
+        "🤖 AI Recommended",
+        use_container_width=True,
+        type=(
+            "primary"
+            if st.session_state.selected_route_type
+            == "ai"
+            else "secondary"
+        )
+    ):
+
+        st.session_state.selected_route_type = "ai"
+
+        st.rerun()
+
 
 with col2:
 
-    st.metric(
-        "📍 Shortest",
-        f"{shortest_route['distance_km']:.1f} km"
-    )
+    if st.button(
+        "⚡ Fastest",
+        use_container_width=True,
+        type=(
+            "primary"
+            if st.session_state.selected_route_type
+            == "fastest"
+            else "secondary"
+        )
+    ):
+
+        st.session_state.selected_route_type = "fastest"
+
+        st.rerun()
+
 
 with col3:
 
-    st.metric(
-        "🛣️ Routes found",
-        len(routes)
+    if st.button(
+        "🥶 Coolest",
+        use_container_width=True,
+        type=(
+            "primary"
+            if st.session_state.selected_route_type
+            == "coolest"
+            else "secondary"
+        )
+    ):
+
+        st.session_state.selected_route_type = "coolest"
+
+        st.rerun()
+
+
+# ============================================================
+# SELECT ROUTE
+# ============================================================
+
+selection = st.session_state.selected_route_type
+
+
+if selection == "fastest":
+
+    selected_route = fastest_route
+
+    route_title = "⚡ Fastest Route"
+
+    route_description = (
+        "The route with the shortest travel time."
     )
 
 
-# ============================================
+elif selection == "coolest":
+
+    selected_route = coolest_route
+
+    route_title = "🥶 Coolest Route"
+
+    route_description = (
+        "The route with the highest climate comfort score."
+    )
+
+
+else:
+
+    selected_route = ai_pick
+
+    route_title = "🤖 AI Recommended Route"
+
+    route_description = (
+        "The best balance between travel time "
+        "and climate comfort."
+    )
+
+
+# ============================================================
+# SELECTED ROUTE DATA
+# ============================================================
+
+climate = selected_route.get(
+    "climate",
+    {}
+)
+
+temperature = climate.get(
+    "average_temperature"
+)
+
+cool_score = climate.get(
+    "cool_score"
+)
+
+heat_exposure = climate.get(
+    "heat_exposure",
+    "Unknown"
+)
+
+ai_score = selected_route.get(
+    "ai_score"
+)
+
+
+# ============================================================
+# SELECTED ROUTE HERO
+# ============================================================
+
+st.markdown(
+    f"""
+    <div class="ai-box">
+
+    <h2>{route_title}</h2>
+
+    <p>{route_description}</p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# METRICS
+# ============================================================
+
+m1, m2, m3, m4 = st.columns(4)
+
+
+with m1:
+
+    st.metric(
+        "⏱️ Travel Time",
+        f"{selected_route['duration_min']:.0f} min"
+    )
+
+
+with m2:
+
+    st.metric(
+        "📏 Distance",
+        f"{selected_route['distance_km']:.1f} km"
+    )
+
+
+with m3:
+
+    if temperature is not None:
+
+        st.metric(
+            "🌡️ Avg Temperature",
+            f"{temperature:.1f} °C"
+        )
+
+    else:
+
+        st.metric(
+            "🌡️ Avg Temperature",
+            "N/A"
+        )
+
+
+with m4:
+
+    if cool_score is not None:
+
+        st.metric(
+            "🥶 Cool Score",
+            f"{cool_score}/100"
+        )
+
+    else:
+
+        st.metric(
+            "🥶 Cool Score",
+            "N/A"
+        )
+
+
+# ============================================================
+# AI SCORE
+# ============================================================
+
+if selection == "ai" and ai_score is not None:
+
+    st.info(
+        f"🤖 **AI Score: {ai_score}/100**  "
+        f"— climate comfort + travel time"
+    )
+
+
+# ============================================================
 # MAP
-# ============================================
+# ============================================================
 
 st.subheader(
-    "🗺️ Route map"
+    "🗺️ Selected Route"
 )
 
 
-# --------------------------------------------
-# Calculate map center
-# --------------------------------------------
-
-center_lat = (
-    start_coords["lat"]
-    + destination_coords["lat"]
-) / 2
-
-center_lon = (
-    start_coords["lon"]
-    + destination_coords["lon"]
-) / 2
-
-
-# --------------------------------------------
-# Create map
-# --------------------------------------------
-
-route_map = folium.Map(
-    location=[
-        center_lat,
-        center_lon
-    ],
-    zoom_start=12,
-    control_scale=True
+geometry = selected_route.get(
+    "geometry"
 )
 
 
-# ============================================
-# START MARKER
-# ============================================
+if geometry:
 
-folium.Marker(
-    location=[
-        start_coords["lat"],
-        start_coords["lon"]
-    ],
-    tooltip="Starting point",
-    popup=start_location
-).add_to(route_map)
+    coordinates = geometry["coordinates"]
 
-
-# ============================================
-# DESTINATION MARKER
-# ============================================
-
-folium.Marker(
-    location=[
-        destination_coords["lat"],
-        destination_coords["lon"]
-    ],
-    tooltip="Destination",
-    popup=destination
-).add_to(route_map)
-
-
-# ============================================
-# DRAW ROUTES
-# ============================================
-
-for route in routes:
-
-    coordinates = route["geometry"]["coordinates"]
-
-    # Convert longitude, latitude
-    # to latitude, longitude
 
     route_points = [
         [
@@ -512,733 +603,264 @@ for route in routes:
     ]
 
 
-    # ----------------------------------------
-    # AI route
-    # ----------------------------------------
-
-    if (
-        route["route_number"]
-        == ai_pick["route_number"]
-    ):
-
-        line_weight = 7
-        line_opacity = 0.9
-        line_color = "#159c9c"
-        tooltip_text = "🤖 AI Pick"
-
-    else:
-
-        line_weight = 4
-        line_opacity = 0.55
-        line_color = "#5d7d84"
-        tooltip_text = route["type"]
+    center_lat = (
+        start_coords["lat"]
+        +
+        destination_coords["lat"]
+    ) / 2
 
 
-    # ----------------------------------------
-    # Draw route
-    # ----------------------------------------
+    center_lon = (
+        start_coords["lon"]
+        +
+        destination_coords["lon"]
+    ) / 2
 
-    folium.PolyLine(
-        locations=route_points,
-        color=line_color,
-        weight=line_weight,
-        opacity=line_opacity,
-        tooltip=tooltip_text
+
+    route_map = folium.Map(
+        location=[
+            center_lat,
+            center_lon
+        ],
+        zoom_start=13,
+        control_scale=True
+    )
+
+
+    # --------------------------------------------------------
+    # START
+    # --------------------------------------------------------
+
+    folium.Marker(
+        [
+            start_coords["lat"],
+            start_coords["lon"]
+        ],
+        tooltip="Starting point",
+        popup=start_location
     ).add_to(route_map)
 
 
-# ============================================
-# DISPLAY MAP
-# ============================================
+    # --------------------------------------------------------
+    # DESTINATION
+    # --------------------------------------------------------
 
-st_folium(
-    route_map,
-    width=1100,
-    height=550
-)
+    folium.Marker(
+        [
+            destination_coords["lat"],
+            destination_coords["lon"]
+        ],
+        tooltip="Destination",
+        popup=destination
+    ).add_to(route_map)
 
 
-# ============================================
-# ROUTE CARDS
-# ============================================
+    # --------------------------------------------------------
+    # SELECTED ROUTE
+    # --------------------------------------------------------
 
-st.write("")
+    folium.PolyLine(
+        locations=route_points,
+        weight=8,
+        opacity=0.9,
+        tooltip=route_title
+    ).add_to(route_map)
+
+
+    st_folium(
+        route_map,
+        width=None,
+        height=550
+    )
+
+
+else:
+
+    st.warning(
+        "Route geometry is unavailable."
+    )
+
+
+# ============================================================
+# CLIMATE INFORMATION
+# ============================================================
 
 st.subheader(
-    "🌡️ Route options"
+    "🌡️ Climate information"
 )
 
 
-# ============================================
-# FASTEST ROUTE DATA
-# ============================================
-
-fastest_climate = fastest_route.get(
-    "climate",
-    {}
-)
-
-fastest_has_climate = fastest_climate.get(
-    "success",
-    False
-)
+c1, c2, c3 = st.columns(3)
 
 
-if fastest_has_climate:
+with c1:
 
-    fastest_temperature = fastest_climate.get(
-        "average_temperature"
-    )
-
-    fastest_exposure = fastest_climate.get(
-        "heat_exposure",
-        "Unknown"
-    )
-
-    fastest_cool_score = fastest_climate.get(
-        "cool_score"
-    )
-
-else:
-
-    fastest_temperature = None
-    fastest_exposure = "Unavailable"
-    fastest_cool_score = None
-
-
-# ============================================
-# FASTEST ROUTE CARD
-# ============================================
-
-with st.container(border=True):
-
-    st.subheader(
-        "⚡ Fastest Route"
-    )
-
-    info1, info2 = st.columns(2)
-
-    with info1:
-
-        st.write(
-            f"⏱️ **{fastest_route['duration_min']:.0f} min**"
+    st.metric(
+        "Minimum",
+        (
+            f"{climate['minimum_temperature']:.1f} °C"
+            if climate.get("minimum_temperature")
+            is not None
+            else "N/A"
         )
-
-    with info2:
-
-        st.write(
-            f"📍 **{fastest_route['distance_km']:.1f} km**"
-        )
-
-
-    if fastest_temperature is not None:
-
-        st.write(
-            f"🌡️ Average temperature: "
-            f"**{fastest_temperature:.1f}°C**"
-        )
-
-    else:
-
-        st.write(
-            "🌡️ Average temperature: "
-            "**Unavailable**"
-        )
-
-
-    st.write(
-        f"🔥 Heat exposure: "
-        f"**{fastest_exposure}**"
     )
 
 
-    if fastest_cool_score is not None:
+with c2:
 
-        st.write(
-            f"🧊 Cool Score: "
-            f"**{fastest_cool_score} / 100**"
+    st.metric(
+        "Maximum",
+        (
+            f"{climate['maximum_temperature']:.1f} °C"
+            if climate.get("maximum_temperature")
+            is not None
+            else "N/A"
         )
-
-    else:
-
-        st.write(
-            "🧊 Cool Score: "
-            "**Unavailable**"
-        )
-
-
-    st.caption(
-        "Best option when travel time is "
-        "the main priority."
     )
 
 
-# ============================================
-# AI PICK DATA
-# ============================================
+with c3:
 
-ai_climate = ai_pick.get(
-    "climate",
-    {}
-)
+    st.metric(
+        "Heat Exposure",
+        heat_exposure
+    )
 
-ai_has_climate = ai_climate.get(
-    "success",
-    False
+
+# ============================================================
+# ROUTE COMPARISON TABLE
+# ============================================================
+
+st.subheader(
+    "📊 Compare Routes"
 )
 
 
-if ai_has_climate:
+table_rows = []
 
-    ai_temperature = ai_climate.get(
-        "average_temperature"
-    )
-
-    ai_exposure = ai_climate.get(
-        "heat_exposure",
-        "Unknown"
-    )
-
-    ai_cool_score = ai_climate.get(
-        "cool_score"
-    )
-
-else:
-
-    ai_temperature = None
-    ai_exposure = "Unavailable"
-    ai_cool_score = None
-
-
-# ============================================
-# AI PICK SCORE
-# ============================================
-
-ai_score = ai_pick.get(
-    "ai_score"
-)
-
-
-if ai_score is None:
-
-    ai_score = ai_cool_score
-
-
-# ============================================
-# AI PICK CARD
-# ============================================
-
-st.write("")
-
-with st.container(border=True):
-
-    st.subheader(
-        "🤖 AI Pick"
-    )
-
-    info1, info2 = st.columns(2)
-
-    with info1:
-
-        st.write(
-            f"⏱️ **{ai_pick['duration_min']:.0f} min**"
-        )
-
-    with info2:
-
-        st.write(
-            f"📍 **{ai_pick['distance_km']:.1f} km**"
-        )
-
-
-    if ai_temperature is not None:
-
-        st.write(
-            f"🌡️ Average temperature: "
-            f"**{ai_temperature:.1f}°C**"
-        )
-
-    else:
-
-        st.write(
-            "🌡️ Average temperature: "
-            "**Unavailable**"
-        )
-
-
-    st.write(
-        f"🔥 Heat exposure: "
-        f"**{ai_exposure}**"
-    )
-
-
-    if ai_score is not None:
-
-        st.write(
-            f"🧊 AI Score: "
-            f"**{ai_score} / 100**"
-        )
-
-    else:
-
-        st.write(
-            "🧊 AI Score: "
-            "**Unavailable**"
-        )
-
-
-    st.markdown(
-        "**Why this route?**"
-    )
-
-    if prefer_cooler and ai_has_climate:
-
-        if fastest_route["route_number"] != ai_pick["route_number"]:
-
-            time_difference = (
-                ai_pick["duration_min"]
-                - fastest_route["duration_min"]
-            )
-
-            time_difference = max(
-                0,
-                time_difference
-            )
-
-            st.write(
-                f"This route balances travel time "
-                f"with climate comfort. It is "
-                f"approximately **{time_difference:.0f} "
-                f"minutes slower** than the fastest "
-                f"route while providing better "
-                f"climate comfort."
-            )
-
-        else:
-
-            st.write(
-                "This route provides the best "
-                "overall balance between travel "
-                "time and climate comfort."
-            )
-
-    elif not prefer_cooler:
-
-        st.write(
-            "You did not prioritize cooler routes, "
-            "so the recommendation favors travel "
-            "time."
-        )
-
-    else:
-
-        st.write(
-            "This route was selected based on "
-            "the available route information."
-        )
-
-
-    st.caption(
-        "Climate preference weighting: "
-        "70% climate + 30% travel time."
-    )
-
-
-# ============================================
-# COOLEST ROUTE CARD
-# ============================================
-
-if coolest_route:
-
-    if (
-        coolest_route["route_number"]
-        != ai_pick["route_number"]
-    ):
-
-        coolest_climate = coolest_route.get(
-            "climate",
-            {}
-        )
-
-        if coolest_climate.get(
-            "success",
-            False
-        ):
-
-            coolest_temperature = coolest_climate.get(
-                "average_temperature"
-            )
-
-            coolest_exposure = coolest_climate.get(
-                "heat_exposure",
-                "Unknown"
-            )
-
-            coolest_score = coolest_climate.get(
-                "cool_score"
-            )
-
-
-            st.write("")
-
-            with st.container(border=True):
-
-                st.subheader(
-                    "🥶 Coolest Route"
-                )
-
-                info1, info2 = st.columns(2)
-
-                with info1:
-
-                    st.write(
-                        f"⏱️ **{coolest_route['duration_min']:.0f} min**"
-                    )
-
-                with info2:
-
-                    st.write(
-                        f"📍 **{coolest_route['distance_km']:.1f} km**"
-                    )
-
-
-                if coolest_temperature is not None:
-
-                    st.write(
-                        f"🌡️ Average temperature: "
-                        f"**{coolest_temperature:.1f}°C**"
-                    )
-
-
-                st.write(
-                    f"🔥 Heat exposure: "
-                    f"**{coolest_exposure}**"
-                )
-
-
-                if coolest_score is not None:
-
-                    st.write(
-                        f"🧊 Cool Score: "
-                        f"**{coolest_score} / 100**"
-                    )
-
-
-                st.caption(
-                    "This route has the highest "
-                    "climate comfort score."
-                )
-
-
-# ============================================
-# OTHER ROUTES
-# ============================================
 
 for route in routes:
 
-    # ----------------------------------------
-    # Don't duplicate AI Pick
-    # ----------------------------------------
-
-    if (
-        route["route_number"]
-        == ai_pick["route_number"]
-    ):
-
-        continue
-
-
-    # ----------------------------------------
-    # Don't duplicate Fastest
-    # ----------------------------------------
-
-    if (
-        route["route_number"]
-        == fastest_route["route_number"]
-    ):
-
-        continue
-
-
-    # ----------------------------------------
-    # Don't duplicate Coolest
-    # ----------------------------------------
-
-    if coolest_route:
-
-        if (
-            route["route_number"]
-            == coolest_route["route_number"]
-        ):
-
-            continue
-
-
-    # ----------------------------------------
-    # Climate information
-    # ----------------------------------------
-
-    climate = route.get(
+    route_climate = route.get(
         "climate",
         {}
     )
 
-    has_climate = climate.get(
-        "success",
-        False
-    )
+
+    route_number = route["route_number"]
 
 
-    st.write("")
+    # --------------------------------------------------------
+    # Determine label
+    # --------------------------------------------------------
 
-    with st.container(border=True):
-
-        st.subheader(
-            "🛣️ Alternative Route"
-        )
-
-        info1, info2 = st.columns(2)
-
-        with info1:
-
-            st.write(
-                f"⏱️ **{route['duration_min']:.0f} min**"
-            )
-
-        with info2:
-
-            st.write(
-                f"📍 **{route['distance_km']:.1f} km**"
-            )
+    labels = []
 
 
-        if has_climate:
+    if (
+        fastest_route
+        and
+        route_number
+        ==
+        fastest_route["route_number"]
+    ):
 
-            st.write(
-                f"🌡️ Average temperature: "
-                f"**{climate['average_temperature']:.1f}°C**"
-            )
-
-            st.write(
-                f"🔥 Heat exposure: "
-                f"**{climate['heat_exposure']}**"
-            )
-
-            st.write(
-                f"🧊 Cool Score: "
-                f"**{climate['cool_score']} / 100**"
-            )
-
-        else:
-
-            st.warning(
-                "FortyGuard climate data is "
-                "currently unavailable for this route."
-            )
-
-
-# ============================================
-# CLIMATE COMFORT
-# ============================================
-
-st.write("")
-
-st.subheader(
-    "🌡️ Climate comfort"
-)
-
-st.caption(
-    "Temperature and heat exposure calculated "
-    "from FortyGuard data."
-)
-
-
-score1, score2, score3 = st.columns(3)
-
-
-# ============================================
-# FASTEST CLIMATE
-# ============================================
-
-with score1:
-
-    with st.container(border=True):
-
-        st.subheader(
+        labels.append(
             "⚡ Fastest"
         )
 
-        if fastest_has_climate:
 
-            st.metric(
-                "Cool Score",
-                f"{fastest_cool_score} / 100"
-            )
+    if (
+        coolest_route
+        and
+        route_number
+        ==
+        coolest_route["route_number"]
+    ):
 
-            st.write(
-                f"🌡️ "
-                f"{fastest_temperature:.1f}°C average"
-            )
-
-            st.caption(
-                f"Heat exposure: "
-                f"{fastest_exposure}"
-            )
-
-        else:
-
-            st.warning(
-                "FortyGuard data unavailable."
-            )
-
-
-# ============================================
-# AI CLIMATE
-# ============================================
-
-with score2:
-
-    with st.container(border=True):
-
-        st.subheader(
-            "🤖 AI Pick"
-        )
-
-        if ai_has_climate:
-
-            st.metric(
-                "AI Score",
-                f"{ai_score} / 100"
-            )
-
-            st.write(
-                f"🌡️ "
-                f"{ai_temperature:.1f}°C average"
-            )
-
-            st.caption(
-                "Climate + travel time balance"
-            )
-
-        else:
-
-            st.warning(
-                "FortyGuard data unavailable."
-            )
-
-
-# ============================================
-# COOLEST CLIMATE
-# ============================================
-
-with score3:
-
-    with st.container(border=True):
-
-        st.subheader(
+        labels.append(
             "🥶 Coolest"
         )
 
-        if coolest_route:
 
-            coolest_climate = coolest_route.get(
-                "climate",
-                {}
+    if (
+        ai_pick
+        and
+        route_number
+        ==
+        ai_pick["route_number"]
+    ):
+
+        labels.append(
+            "🤖 AI Recommended"
+        )
+
+
+    label = " / ".join(labels)
+
+    if not label:
+        label = "Alternative Route"
+
+    table_rows.append({
+        "Route":
+            f"Route {route_number}",
+
+        "Type":
+            label,
+
+        "Time":
+            f"{route['duration_min']:.0f} min",
+
+        "Distance":
+            f"{route['distance_km']:.1f} km",
+
+        "Avg Temp":
+            (
+                f"{route_climate['average_temperature']:.1f} °C"
+                if route_climate.get(
+                    "average_temperature"
+                ) is not None
+                else "N/A"
+            ),
+
+        "Cool Score":
+            (
+                f"{route_climate['cool_score']}/100"
+                if route_climate.get(
+                    "cool_score"
+                ) is not None
+                else "N/A"
+            ),
+
+        "AI Score":
+            (
+                f"{route.get('ai_score')}/100"
+                if route.get("ai_score")
+                is not None
+                else "N/A"
             )
-
-            if coolest_climate.get(
-                "success",
-                False
-            ):
-
-                st.metric(
-                    "Cool Score",
-                    f'{coolest_climate["cool_score"]} / 100'
-                )
-
-                st.write(
-                    f'🌡️ '
-                    f'{coolest_climate["average_temperature"]:.1f}°C average'
-                )
-
-                st.caption(
-                    f'Heat exposure: '
-                    f'{coolest_climate["heat_exposure"]}'
-                )
-
-            else:
-
-                st.warning(
-                    "FortyGuard data unavailable."
-                )
-
-        else:
-
-            st.warning(
-                "No climate data available."
-            )
+    })
 
 
-# ============================================
-# USER PREFERENCES
-# ============================================
-
-st.write("")
-
-st.subheader(
-    "Your preferences"
+comparison_df = pd.DataFrame(
+    table_rows
 )
 
-pref1, pref2, pref3 = st.columns(3)
+
+st.dataframe(
+    comparison_df,
+    use_container_width=True,
+    hide_index=True
+)
 
 
-with pref1:
+# ============================================================
+# FOOTER
+# ============================================================
 
-    st.write(
-        "🌡️ Cooler route:",
-        "Yes"
-        if prefer_cooler
-        else "No"
-    )
+st.divider()
 
-
-with pref2:
-
-    st.write(
-        "⏱️ Extra time:",
-        f"{max_extra_time} min"
-    )
-
-
-with pref3:
-
-    if travel_mode == "🚗 EV":
-
-        st.write(
-            "🔋 Charging:",
-            "Preferred"
-            if prefer_charging
-            else "Not required"
-        )
-
-    else:
-
-        st.write(
-            "🚗 EV charging:",
-            "Not applicable"
-        )
-
-
-# ============================================
-# BACK BUTTON
-# ============================================
-
-st.write("")
-
-if st.button(
-    "← Change route"
-):
-
-    st.switch_page(
-        "pages/1_Plan_Route.py"
-    )
+st.caption(
+    "UrbanBreeze • Routes powered by OSRM • "
+    "Climate analysis powered by FortyGuard"
+)
