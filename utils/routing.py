@@ -1,6 +1,7 @@
 import math
 import requests
 
+
 # ============================================================
 # NOMINATIM SETTINGS
 # ============================================================
@@ -16,9 +17,11 @@ HEADERS = {
 # OSRM SETTINGS
 # ============================================================
 
-OSRM_BASE_URL = (
-    "https://router.project-osrm.org"
-)
+OSRM_SERVERS = {
+    "car":  ("https://routing.openstreetmap.de/routed-car", "driving"),
+    "bike": ("https://routing.openstreetmap.de/routed-bike", "bike"),
+    "foot": ("https://routing.openstreetmap.de/routed-foot", "foot"),
+}
 
 
 # ============================================================
@@ -27,8 +30,8 @@ OSRM_BASE_URL = (
 
 def search_california_locations(query):
     """
-    Search for addresses, streets, cities and
-    landmarks in California.
+    Search for addresses, streets, cities and landmarks
+    in California.
 
     Returns a list of matching locations.
     """
@@ -36,123 +39,64 @@ def search_california_locations(query):
     if not query or len(query.strip()) < 3:
         return []
 
-
-    search_query = (
-        f"{query}, California, USA"
-    )
-
+    search_query = f"{query}, California, USA"
 
     params = {
-
         "q": search_query,
-
         "format": "jsonv2",
-
         "limit": 5,
-
         "addressdetails": 1,
-
         "countrycodes": "us",
 
-        # California approximate bounding box
-        #
+        # California approximate bounding box:
         # west, south, east, north
-        "viewbox": (
-            "-124.5,32.5,"
-            "-114.0,42.1"
-        ),
-
+        "viewbox": "-124.5,32.5,-114.0,42.1",
         "bounded": 1
     }
 
-
     try:
-
         response = requests.get(
-
             NOMINATIM_URL,
-
             params=params,
-
             headers=HEADERS,
-
             timeout=10
-
         )
 
         response.raise_for_status()
 
         results = response.json()
 
-
         locations = []
-
 
         for result in results:
 
-            address = result.get(
-                "address",
-                {}
-            )
+            address = result.get("address", {})
 
-
-            # ----------------------------------------
-            # Make sure result is California
-            # ----------------------------------------
-
-            state = address.get(
-                "state",
-                ""
-            )
-
+            state = address.get("state", "")
 
             if state.lower() != "california":
-
                 continue
 
-
-            # ----------------------------------------
-            # Store location
-            # ----------------------------------------
-
             locations.append({
+                "display_name": result.get(
+                    "display_name",
+                    query
+                ),
 
-                "display_name":
-                    result.get(
-                        "display_name",
-                        query
-                    ),
+                "lat": float(result["lat"]),
+                "lon": float(result["lon"]),
 
-                "lat":
-                    float(result["lat"]),
+                "address": address,
 
-                "lon":
-                    float(result["lon"]),
-
-                "address":
-                    address,
-
-                "osm_type":
-                    result.get(
-                        "osm_type"
-                    ),
-
-                "osm_id":
-                    result.get(
-                        "osm_id"
-                    )
+                "osm_type": result.get("osm_type"),
+                "osm_id": result.get("osm_id")
             })
-
 
         return locations
 
-
     except requests.RequestException as error:
 
-        print(
-            "Location search error:",
-            error
-        )
+        print("Location search error:", error)
 
         return []
 
@@ -166,31 +110,18 @@ def geocode_location(location):
     Convert a location name into coordinates.
     """
 
-    results = search_california_locations(
-        location
-    )
-
+    results = search_california_locations(location)
 
     if not results:
-
         return None
-
 
     result = results[0]
 
-
     return {
-
-        "lat":
-            result["lat"],
-
-        "lon":
-            result["lon"],
-
-        "name":
-            result["display_name"]
+        "lat": result["lat"],
+        "lon": result["lon"],
+        "name": result["display_name"]
     }
-
 
 
 # ============================================================
@@ -198,11 +129,11 @@ def geocode_location(location):
 # ============================================================
 
 def get_osrm_profile(travel_mode):
-    """
-    The public OSRM demo server is primarily configured for car
-    routing. Walking/cycling/EV profiles need a backend that
-    actually provides those profiles.
-    """
+    mode = travel_mode.lower()
+    if "walk" in mode or "foot" in mode:
+        return "foot"
+    if "bike" in mode or "cycle" in mode or "cyclist" in mode:
+        return "bike"
     return "car"
 
 
@@ -211,6 +142,11 @@ def get_osrm_profile(travel_mode):
 # ============================================================
 
 def _sample_geometry(coordinates, count=7):
+    """
+    Reduce a route geometry to a small number of
+    representative points for similarity checking.
+    """
+
     if not coordinates:
         return []
 
@@ -219,7 +155,10 @@ def _sample_geometry(coordinates, count=7):
 
     return [
         coordinates[
-            round(i * (len(coordinates) - 1) / (count - 1))
+            round(
+                i * (len(coordinates) - 1)
+                / (count - 1)
+            )
         ]
         for i in range(count)
     ]
@@ -227,24 +166,60 @@ def _sample_geometry(coordinates, count=7):
 
 def routes_are_too_similar(route_a, route_b):
     """
-    Reject routes that are effectively the same route.
-    Geometry is checked in addition to time/distance.
+    Determine whether two routes are effectively
+    the same route.
+
+    Both travel statistics and geometry are checked.
     """
 
     distance_a = route_a.get("distance_km", 0)
     distance_b = route_b.get("distance_km", 0)
+
     duration_a = route_a.get("duration_min", 0)
     duration_b = route_b.get("duration_min", 0)
 
-    if distance_a and duration_a:
-        distance_difference = abs(distance_a - distance_b) / distance_a
-        duration_difference = abs(duration_a - duration_b) / duration_a
+    # --------------------------------------------------------
+    # Distance/time similarity
+    # --------------------------------------------------------
 
-        if distance_difference < 0.015 and duration_difference < 0.02:
+    if distance_a and duration_a:
+
+        distance_difference = (
+            abs(distance_a - distance_b)
+            / distance_a
+        )
+
+        duration_difference = (
+            abs(duration_a - duration_b)
+            / duration_a
+        )
+
+        if (
+            distance_difference < 0.015
+            and
+            duration_difference < 0.02
+        ):
             return True
 
-    coords_a = route_a.get("geometry", {}).get("coordinates", [])
-    coords_b = route_b.get("geometry", {}).get("coordinates", [])
+    # --------------------------------------------------------
+    # Geometry similarity
+    # --------------------------------------------------------
+
+    coords_a = route_a.get(
+        "geometry",
+        {}
+    ).get(
+        "coordinates",
+        []
+    )
+
+    coords_b = route_b.get(
+        "geometry",
+        {}
+    ).get(
+        "coordinates",
+        []
+    )
 
     if not coords_a or not coords_b:
         return False
@@ -258,6 +233,7 @@ def routes_are_too_similar(route_a, route_b):
     total_km = 0.0
 
     for p1, p2 in zip(a, b):
+
         lon1, lat1 = p1
         lon2, lat2 = p2
 
@@ -266,20 +242,49 @@ def routes_are_too_similar(route_a, route_b):
             (lat1 - lat2) * 111.0
         )
 
-    return (total_km / len(a)) < 0.15
+    average_difference = (
+        total_km / len(a)
+    )
+
+    return average_difference < 0.15
 
 
 # ============================================================
 # PROCESS OSRM ROUTE
 # ============================================================
 
-def process_osrm_route(route, route_number, strategy="osrm"):
+def process_osrm_route(
+    route,
+    route_number,
+    strategy="osrm"
+):
+    """
+    Convert raw OSRM route data into the common
+    UrbanBreeze route format.
+    """
+
     return {
         "route_number": route_number,
-        "distance_km": round(route.get("distance", 0) / 1000.0, 2),
-        "duration_min": round(route.get("duration", 0) / 60.0, 1),
+
+        "distance_km": round(
+            route.get("distance", 0)
+            / 1000.0,
+            2
+        ),
+
+        "duration_min": round(
+            route.get("duration", 0)
+            / 60.0,
+            1
+        ),
+
         "geometry": route.get("geometry"),
-        "steps": route.get("legs", []),
+
+        "steps": route.get(
+            "legs",
+            []
+        ),
+
         "strategy": strategy,
 
         # Filled later by climate/scoring code.
@@ -295,25 +300,19 @@ def process_osrm_route(route, route_number, strategy="osrm"):
 # ============================================================
 
 def _request_osrm_route(profile, coordinates, alternatives=True):
-    url = (
-        f"{OSRM_BASE_URL}/route/v1/{profile}/{coordinates}"
-    )
+    base_url, path_profile = OSRM_SERVERS[profile]
+
+    url = f"{base_url}/route/v1/{path_profile}/{coordinates}"
 
     params = {
         "overview": "full",
         "geometries": "geojson",
         "steps": "true",
-        "alternatives": "true" if alternatives else "false",
+        "alternatives": "true" if alternatives else "false"
     }
 
-    response = requests.get(
-        url,
-        params=params,
-        timeout=25
-    )
-
+    response = requests.get(url, params=params, timeout=25)
     response.raise_for_status()
-
     data = response.json()
 
     if data.get("code") != "Ok":
@@ -332,59 +331,118 @@ def _build_detour_waypoint(
     destination_lat,
     destination_lon,
     side,
-    strength=0.035
+    strength
 ):
     """
-    Create a moderate waypoint to the left/right of the direct
-    route. OSRM then calculates a real road route through it.
+    Build a controlled waypoint to one side of the
+    direct start → destination direction.
 
-    This gives UrbanBreeze genuine alternative geometries instead
-    of drawing fake/duplicated lines.
+    OSRM then calculates a REAL road route through
+    this waypoint.
+
+    This does NOT draw a fake route.
     """
 
-    mid_lat = (start_lat + destination_lat) / 2.0
-    mid_lon = (start_lon + destination_lon) / 2.0
+    mid_lat = (
+        start_lat
+        + destination_lat
+    ) / 2.0
 
-    dx = destination_lon - start_lon
-    dy = destination_lat - start_lat
-    length = math.hypot(dx, dy)
+    mid_lon = (
+        start_lon
+        + destination_lon
+    ) / 2.0
+
+    dx = (
+        destination_lon
+        - start_lon
+    )
+
+    dy = (
+        destination_lat
+        - start_lat
+    )
+
+    length = math.hypot(
+        dx,
+        dy
+    )
 
     if length < 0.0001:
-        return mid_lat, mid_lon
+        return (
+            mid_lat,
+            mid_lon
+        )
 
-    # Perpendicular direction.
-    perpendicular_x = -dy / length
-    perpendicular_y = dx / length
+    # --------------------------------------------------------
+    # Perpendicular direction
+    # --------------------------------------------------------
 
-    # Scale the offset down for short trips.
+    perpendicular_x = (
+        -dy / length
+    )
+
+    perpendicular_y = (
+        dx / length
+    )
+
+    # --------------------------------------------------------
+    # Estimate direct distance
+    # --------------------------------------------------------
+
     direct_distance_km = math.hypot(
         dx * 85.0,
         dy * 111.0
     )
 
+    # --------------------------------------------------------
+    # Adaptive detour size
+    # --------------------------------------------------------
+
     adaptive_strength = min(
         strength,
-        max(0.008, direct_distance_km / 2500.0)
+        max(
+            0.008,
+            direct_distance_km / 2500.0
+        )
     )
 
     waypoint_lon = (
         mid_lon
-        + side * perpendicular_x * adaptive_strength
+        +
+        side
+        * perpendicular_x
+        * adaptive_strength
     )
 
     waypoint_lat = (
         mid_lat
-        + side * perpendicular_y * adaptive_strength
+        +
+        side
+        * perpendicular_y
+        * adaptive_strength
     )
 
-    return waypoint_lat, waypoint_lon
+    return (
+        waypoint_lat,
+        waypoint_lon
+    )
 
 
 # ============================================================
 # ADD UNIQUE ROUTE
 # ============================================================
 
-def _add_unique_route(routes, raw_route, strategy):
+def _add_unique_route(
+    routes,
+    raw_route,
+    strategy
+):
+    """
+    Process a raw OSRM route and add it only if
+    it is genuinely different from existing routes.
+    """
+
     processed = process_osrm_route(
         raw_route,
         len(routes) + 1,
@@ -395,11 +453,80 @@ def _add_unique_route(routes, raw_route, strategy):
         return False
 
     for existing in routes:
-        if routes_are_too_similar(processed, existing):
+
+        if routes_are_too_similar(
+            processed,
+            existing
+        ):
             return False
 
     routes.append(processed)
+
     return True
+
+
+# ============================================================
+# BUILD WAYPOINT ROUTE
+# ============================================================
+
+def _try_waypoint_route(
+    routes,
+    profile,
+    start_lat,
+    start_lon,
+    destination_lat,
+    destination_lon,
+    side,
+    strength,
+    strategy
+):
+    """
+    Try to generate one additional REAL road route
+    through a waypoint.
+    """
+
+    waypoint_lat, waypoint_lon = (
+        _build_detour_waypoint(
+            start_lat,
+            start_lon,
+            destination_lat,
+            destination_lon,
+            side,
+            strength
+        )
+    )
+
+    coordinates = (
+        f"{start_lon},{start_lat};"
+        f"{waypoint_lon},{waypoint_lat};"
+        f"{destination_lon},{destination_lat}"
+    )
+
+    try:
+
+        raw_routes = _request_osrm_route(
+            profile,
+            coordinates,
+            alternatives=False
+        )
+
+        for raw_route in raw_routes:
+
+            if _add_unique_route(
+                routes,
+                raw_route,
+                strategy
+            ):
+                return True
+
+    except requests.RequestException as error:
+
+        print(
+            f"OSRM {strategy} error:",
+            error
+        )
+
+    return False
 
 
 # ============================================================
@@ -412,27 +539,49 @@ def get_routes(
     travel_mode="🚶 Walk"
 ):
     """
-    Generate up to 3 real route candidates.
+    Generate real route candidates between the
+    same start and destination.
 
-    Candidate sources:
-      1. Normal OSRM route + OSRM alternatives.
-      2. Real OSRM route through a left-side waypoint.
-      3. Real OSRM route through a right-side waypoint.
+    Candidate generation order:
 
-    If OSRM cannot produce 3 genuinely different routes, the
-    function returns the number it can actually produce rather
-    than inventing route geometries.
+        1. Normal OSRM route
+        2. OSRM alternative routes
+        3. Moderate left-side route
+        4. Moderate right-side route
+        5. Wider left-side route
+        6. Wider right-side route
 
-    This function does NOT decide Fastest/Coolest/AI Pick.
-    Climate scoring does that after route generation.
+    The function returns up to 3 genuinely different
+    routes.
+
+    IMPORTANT:
+        This function does NOT decide:
+            - Fastest
+            - Coolest
+            - AI Recommended
+
+        Those decisions belong to climate/scoring code.
     """
 
-    profile = get_osrm_profile(travel_mode)
+    profile = get_osrm_profile(
+        travel_mode
+    )
 
-    start_lon = float(start["lon"])
-    start_lat = float(start["lat"])
-    destination_lon = float(destination["lon"])
-    destination_lat = float(destination["lat"])
+    start_lon = float(
+        start["lon"]
+    )
+
+    start_lat = float(
+        start["lat"]
+    )
+
+    destination_lon = float(
+        destination["lon"]
+    )
+
+    destination_lat = float(
+        destination["lat"]
+    )
 
     direct_coordinates = (
         f"{start_lon},{start_lat};"
@@ -440,20 +589,36 @@ def get_routes(
     )
 
     print("\n" + "=" * 60)
-    print("URBANBREEZE ROUTE GENERATION")
+    print(
+        "URBANBREEZE ROUTE GENERATION"
+    )
     print("=" * 60)
-    print("Travel mode:", travel_mode)
-    print("OSRM profile:", profile)
-    print("Requesting up to 3 real route candidates...")
+
+    print(
+        "Travel mode:",
+        travel_mode
+    )
+
+    print(
+        "OSRM profile:",
+        profile
+    )
+
+    print(
+        "Generating up to 3 "
+        "genuinely different routes..."
+    )
+
     print("=" * 60)
 
     routes = []
 
-    # --------------------------------------------------------
-    # 1. Normal route + OSRM alternatives
-    # --------------------------------------------------------
+    # ========================================================
+    # 1. NORMAL ROUTE + OSRM ALTERNATIVES
+    # ========================================================
 
     try:
+
         raw_routes = _request_osrm_route(
             profile,
             direct_coordinates,
@@ -461,6 +626,7 @@ def get_routes(
         )
 
         for raw_route in raw_routes:
+
             _add_unique_route(
                 routes,
                 raw_route,
@@ -471,164 +637,121 @@ def get_routes(
                 break
 
     except requests.RequestException as error:
-        print("OSRM direct request error:", error)
 
-    # --------------------------------------------------------
-    # 2. Left detour candidate
-    # --------------------------------------------------------
+        print(
+            "OSRM direct request error:",
+            error
+        )
+
+    # ========================================================
+    # 2. MODERATE LEFT DETOUR
+    # ========================================================
 
     if len(routes) < 3:
 
-        waypoint_lat, waypoint_lon = _build_detour_waypoint(
+        _try_waypoint_route(
+            routes,
+            profile,
             start_lat,
             start_lon,
             destination_lat,
             destination_lon,
             side=-1,
-            strength=0.035
+            strength=0.025,
+            strategy="detour_left"
         )
 
-        coordinates = (
-            f"{start_lon},{start_lat};"
-            f"{waypoint_lon},{waypoint_lat};"
-            f"{destination_lon},{destination_lat}"
-        )
-
-        try:
-            raw_routes = _request_osrm_route(
-                profile,
-                coordinates,
-                alternatives=False
-            )
-
-            for raw_route in raw_routes:
-                if _add_unique_route(
-                    routes,
-                    raw_route,
-                    "detour_left"
-                ):
-                    break
-
-        except requests.RequestException as error:
-            print("OSRM left-detour error:", error)
-
-    # --------------------------------------------------------
-    # 3. Right detour candidate
-    # --------------------------------------------------------
+    # ========================================================
+    # 3. MODERATE RIGHT DETOUR
+    # ========================================================
 
     if len(routes) < 3:
 
-        waypoint_lat, waypoint_lon = _build_detour_waypoint(
+        _try_waypoint_route(
+            routes,
+            profile,
             start_lat,
             start_lon,
             destination_lat,
             destination_lon,
             side=1,
-            strength=0.035
+            strength=0.025,
+            strategy="detour_right"
         )
 
-        coordinates = (
-            f"{start_lon},{start_lat};"
-            f"{waypoint_lon},{waypoint_lat};"
-            f"{destination_lon},{destination_lat}"
-        )
-
-        try:
-            raw_routes = _request_osrm_route(
-                profile,
-                coordinates,
-                alternatives=False
-            )
-
-            for raw_route in raw_routes:
-                if _add_unique_route(
-                    routes,
-                    raw_route,
-                    "detour_right"
-                ):
-                    break
-
-        except requests.RequestException as error:
-            print("OSRM right-detour error:", error)
-
-    # --------------------------------------------------------
-    # Stronger detours only if needed
-    # --------------------------------------------------------
+    # ========================================================
+    # 4. WIDER LEFT DETOUR
+    # ========================================================
 
     if len(routes) < 3:
 
-        for side, strategy in [
-            (-1, "wide_detour_left"),
-            (1, "wide_detour_right")
-        ]:
+        _try_waypoint_route(
+            routes,
+            profile,
+            start_lat,
+            start_lon,
+            destination_lat,
+            destination_lon,
+            side=-1,
+            strength=0.045,
+            strategy="wide_detour_left"
+        )
 
-            if len(routes) >= 3:
-                break
+    # ========================================================
+    # 5. WIDER RIGHT DETOUR
+    # ========================================================
 
-            waypoint_lat, waypoint_lon = _build_detour_waypoint(
-                start_lat,
-                start_lon,
-                destination_lat,
-                destination_lon,
-                side=side,
-                strength=0.055
-            )
+    if len(routes) < 3:
 
-            coordinates = (
-                f"{start_lon},{start_lat};"
-                f"{waypoint_lon},{waypoint_lat};"
-                f"{destination_lon},{destination_lat}"
-            )
+        _try_waypoint_route(
+            routes,
+            profile,
+            start_lat,
+            start_lon,
+            destination_lat,
+            destination_lon,
+            side=1,
+            strength=0.045,
+            strategy="wide_detour_right"
+        )
 
-            try:
-                raw_routes = _request_osrm_route(
-                    profile,
-                    coordinates,
-                    alternatives=False
-                )
-
-                for raw_route in raw_routes:
-                    if _add_unique_route(
-                        routes,
-                        raw_route,
-                        strategy
-                    ):
-                        break
-
-            except requests.RequestException as error:
-                print(
-                    f"OSRM {strategy} error:",
-                    error
-                )
-
-    # --------------------------------------------------------
-    # Sort by travel time
-    # --------------------------------------------------------
+    # ========================================================
+    # SORT BY TRAVEL TIME
+    # ========================================================
 
     routes.sort(
-        key=lambda route: route["duration_min"]
+        key=lambda route:
+        route["duration_min"]
     )
 
-    for index, route in enumerate(routes):
-        route["route_number"] = index + 1
+    # ========================================================
+    # REASSIGN ROUTE NUMBERS
+    # ========================================================
 
-    # This is only a candidate label. The final dashboard labels
-    # should be assigned after climate analysis.
-    if routes:
-        routes[0]["route_label"] = "Fastest Candidate"
+    for index, route in enumerate(
+        routes
+    ):
 
-    # --------------------------------------------------------
-    # Debug
-    # --------------------------------------------------------
+        route["route_number"] = (
+            index + 1
+        )
+
+    # ========================================================
+    # DEBUG INFORMATION
+    # ========================================================
 
     print("\n" + "=" * 60)
+
     print(
-        f"URBANBREEZE FOUND {len(routes)} "
-        "UNIQUE ROUTE CANDIDATE(S)"
+        f"URBANBREEZE FOUND "
+        f"{len(routes)} "
+        f"UNIQUE ROUTE CANDIDATE(S)"
     )
+
     print("=" * 60)
 
     for route in routes:
+
         print(
             f"Route {route['route_number']}: "
             f"{route['duration_min']} min | "
