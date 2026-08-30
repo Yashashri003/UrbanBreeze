@@ -329,7 +329,36 @@ h4 {
 
             line-height: 1.6;
         }
-
+        /* ============================================
+               TOP NAVIGATION
+               ============================================ */
+        
+            div[data-testid="stHorizontalBlock"] .stButton > button {
+                white-space: nowrap;
+            }
+        
+        /* Profile icon button */
+        div[data-testid="stHorizontalBlock"] .stButton > button {
+            min-width: 42px;
+        }
+        
+        /* Make the last navigation button round */
+        div[data-testid="stHorizontalBlock"] > div:last-child .stButton > button {
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            min-height: 42px !important;
+        
+            padding: 0 !important;
+        
+            border-radius: 50% !important;
+        
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        
+            font-size: 18px !important;
+        }
 
         /* ==================================================
            DASHBOARD CARDS
@@ -600,3 +629,4 @@ def section_title(title, caption=None):
         html,
         unsafe_allow_html=True
     )
+    
