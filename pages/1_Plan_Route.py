@@ -30,7 +30,7 @@ from utils.ui import apply_urbanbreeze_theme, logo
 
 st.set_page_config(
     page_title="Plan Route | UrbanBreeze",
-        layout="wide"
+    layout="wide"
 )
 
 apply_urbanbreeze_theme()
@@ -50,13 +50,12 @@ st.markdown(
 
     .block-container {
         max-width: 1240px !important;
-        padding-top: 1.2rem !important;
+        padding-top: 5rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
         padding-bottom: 3rem !important;
     }
 
-    /* Keep the route-location content inside the viewport. */
     div[data-testid="stHorizontalBlock"] {
         max-width: 100% !important;
     }
@@ -65,7 +64,9 @@ st.markdown(
         min-width: 0 !important;
     }
 
-    .stMarkdown, .stCaption, .stTextInput,
+    .stMarkdown,
+    .stCaption,
+    .stTextInput,
     div[data-testid="stTabs"] {
         max-width: 100% !important;
     }
@@ -73,6 +74,7 @@ st.markdown(
     h1, h2, h3, h4, p, label, span {
         overflow-wrap: anywhere;
     }
+
 
     /* ========================================================
        ALL BUTTONS
@@ -85,6 +87,7 @@ st.markdown(
 
         background: #0d343b !important;
         color: #eefafa !important;
+
         border: 1px solid #2b555d !important;
 
         font-weight: 650 !important;
@@ -99,11 +102,13 @@ st.markdown(
             transform 0.15s ease !important;
     }
 
+
     div[data-testid="stButton"] button:hover {
         background: #14464e !important;
         color: #ffffff !important;
         border-color: #22b7b2 !important;
     }
+
 
     /* ========================================================
        PRIMARY BUTTON
@@ -116,43 +121,64 @@ st.markdown(
         font-weight: 750 !important;
     }
 
+
     div[data-testid="stButton"] button[kind="primary"]:hover {
         background: #20b9b4 !important;
         border-color: #20b9b4 !important;
         transform: translateY(-1px) !important;
     }
 
-    /* ========================================================
-       PROFILE BUTTON
-       ======================================================== */
-
-    div.st-key-plan_profile_icon button {
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        max-width: 44px !important;
-        min-height: 44px !important;
-        max-height: 44px !important;
-
-        padding: 0 !important;
-        border-radius: 50% !important;
-
-        background: #ffffff !important;
-        color: #17282d !important;
-
-        border: 1px solid #c9dadd !important;
-
-        font-size: 18px !important;
-    }
-
-    div.st-key-plan_profile_icon button:hover {
-        background: #eaf8f7 !important;
-        color: #087f82 !important;
-        border-color: #16a6a3 !important;
-    }
 
     /* ========================================================
-       SWITCH BUTTON
+   PROFILE BUTTON
+   ======================================================== */
+
+div.st-key-plan_profile_icon button {
+    width: 44px !important;
+    height: 44px !important;
+
+    min-width: 44px !important;
+    max-width: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+
+    padding: 0 !important;
+
+    /* Keep the profile perfectly circular */
+    border-radius: 50% !important;
+
+    /* Same dark teal style as the navigation boxes */
+    background: #0d343b !important;
+
+    /* Light boundary around the circle */
+    border: 1px solid #b9ced1 !important;
+
+    /* Person icon */
+    color: #ffffff !important;
+
+    font-size: 18px !important;
+    font-weight: 700 !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    box-shadow: none !important;
+}
+
+/* Keep the person white when hovering */
+div.st-key-plan_profile_icon button:hover {
+    background: #0d343b !important;
+    color: #ffffff !important;
+
+    border-color: #dcebed !important;
+
+    transform: none !important;
+}
+
+
+    /* ========================================================
+       SWITCH LOCATION BUTTON
        ======================================================== */
 
     div.st-key-switch_location_container {
@@ -166,60 +192,99 @@ st.markdown(
         padding-top: 30px !important;
     }
 
+
+    /* Button wrapper */
+
     div.st-key-switch_location_container div[data-testid="stButton"] {
         width: 56px !important;
         min-width: 56px !important;
+
         margin: 0 auto !important;
     }
 
-    /* Visible rectangular switch — not a circular icon */
+
+    /* ========================================================
+       ARROW BOX
+       ======================================================== */
+
     div.st-key-switch_location_container button {
         width: 56px !important;
-        height: 42px !important;
+        height: 44px !important;
 
         min-width: 56px !important;
         max-width: 56px !important;
 
-        min-height: 42px !important;
-        max-height: 42px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
 
         padding: 0 !important;
         margin: 0 auto !important;
 
-        border-radius: 9px !important;
+        /* UrbanBreeze teal */
+        background: #159f9d !important;
 
-        background: #ffffff !important;
-        color: #087f82 !important;
+        /* DARK / BLACK ARROW */
+        color: #07191d !important;
 
-        border: 1px solid #9fcfd1 !important;
+        border: 1px solid #22b7b2 !important;
 
-        font-size: 20px !important;
-        font-weight: 800 !important;
+        border-radius: 10px !important;
+
+        font-size: 29px !important;
+        font-weight: 900 !important;
+
         line-height: 1 !important;
-
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
 
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
 
+        opacity: 1 !important;
+
+        box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.22) !important;
+
         transition:
             background 0.15s ease,
             border-color 0.15s ease,
-            color 0.15s ease,
             transform 0.15s ease !important;
     }
 
+
+    /* Actual arrow/text */
+
+    div.st-key-switch_location_container button p,
+    div.st-key-switch_location_container button span {
+        color: #07191d !important;
+        font-weight: 900 !important;
+        opacity: 1 !important;
+    }
+
+
+    /* Hover */
+
     div.st-key-switch_location_container button:hover {
-        background: #e8faf8 !important;
-        color: #056b6e !important;
-        border-color: #16a6a3 !important;
+        background: #20b9b4 !important;
+        border-color: #5edbd6 !important;
+
+        color: #000000 !important;
+
         transform: translateY(-1px) !important;
     }
 
-    div.st-key-switch_location_container button:active {
-        transform: translateY(0) scale(0.97) !important;
+
+    div.st-key-switch_location_container button:hover p,
+    div.st-key-switch_location_container button:hover span {
+        color: #000000 !important;
     }
+
+
+    /* Click */
+
+    div.st-key-switch_location_container button:active {
+        transform: translateY(0) scale(0.96) !important;
+    }
+
 
     /* ========================================================
        TABS
@@ -230,13 +295,16 @@ st.markdown(
         font-weight: 600 !important;
     }
 
+
     div[data-testid="stTabs"] button[aria-selected="true"] {
         color: #ffffff !important;
     }
 
+
     div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
         background-color: #16a6a3 !important;
     }
+
 
     /* ========================================================
        INPUTS
@@ -245,24 +313,31 @@ st.markdown(
     .stTextInput input {
         background: #ffffff !important;
         color: #15343a !important;
+
         border: 1px solid #b9ced1 !important;
         border-radius: 10px !important;
     }
+
 
     .stTextInput input::placeholder {
         color: #789197 !important;
     }
 
+
     .stTextInput input:focus {
         border-color: #16a6a3 !important;
-        box-shadow: 0 0 0 2px rgba(22,166,163,0.15) !important;
+
+        box-shadow:
+            0 0 0 2px rgba(22,166,163,0.15) !important;
     }
+
 
     div[data-baseweb="select"] > div {
         background: #ffffff !important;
         color: #15343a !important;
         border-color: #b9ced1 !important;
     }
+
 
     /* ========================================================
        FORM CONTROLS
@@ -272,6 +347,7 @@ st.markdown(
     div[data-testid="stCheckbox"] label {
         color: #dcebed !important;
     }
+
 
     /* ========================================================
        MOBILE
@@ -286,6 +362,7 @@ st.markdown(
 
     }
 
+
     @media (max-width: 700px) {
 
         .block-container {
@@ -294,43 +371,50 @@ st.markdown(
             padding-top: 0.65rem !important;
         }
 
-        div.st-key-switch_location_container {
-            min-height: 100px !important;
-            padding-top: 22px !important;
-        }
 
         div.st-key-switch_location_container {
             min-height: 96px !important;
             padding-top: 18px !important;
         }
 
+
         div.st-key-switch_location_container div[data-testid="stButton"] {
             width: 50px !important;
             min-width: 50px !important;
         }
 
+
         div.st-key-switch_location_container button {
             width: 50px !important;
             height: 40px !important;
+
             min-width: 50px !important;
             max-width: 50px !important;
+
             min-height: 40px !important;
             max-height: 40px !important;
-            font-size: 18px !important;
+
+            font-size: 25px !important;
         }
+
 
         div[data-testid="stButton"] button {
             min-height: 40px !important;
+
             padding-left: 8px !important;
             padding-right: 8px !important;
+
             font-size: 12px !important;
         }
+
 
         div.st-key-plan_profile_icon button {
             width: 40px !important;
             height: 40px !important;
+
             min-width: 40px !important;
             max-width: 40px !important;
+
             min-height: 40px !important;
             max-height: 40px !important;
         }
@@ -389,16 +473,6 @@ if "loaded_route_initial_texts" not in st.session_state:
 # ============================================================
 
 def load_route_from_previous_page():
-    """
-    Loads information passed from Saved Places or Route History.
-
-    Supported session-state formats are intentionally flexible
-    so this page works with the existing project files.
-    """
-
-    # ========================================================
-    # 1. FULL ROUTE REPLAY
-    # ========================================================
 
     route_data = None
 
@@ -421,17 +495,16 @@ def load_route_from_previous_page():
 
                 route_data = value
 
-                # Consume it only once
                 del st.session_state[key]
 
                 break
 
 
-    if route_data:
+    # ========================================================
+    # FULL ROUTE REPLAY
+    # ========================================================
 
-        # ----------------------------------------------------
-        # Starting point
-        # ----------------------------------------------------
+    if route_data:
 
         start_name = (
             route_data.get("start_location")
@@ -440,11 +513,6 @@ def load_route_from_previous_page():
             or route_data.get("from")
         )
 
-
-        # ----------------------------------------------------
-        # Destination
-        # ----------------------------------------------------
-
         destination_name = (
             route_data.get("destination")
             or route_data.get("destination_location")
@@ -452,20 +520,10 @@ def load_route_from_previous_page():
             or route_data.get("to")
         )
 
-
-        # ----------------------------------------------------
-        # Starting coordinates
-        # ----------------------------------------------------
-
         start_coords = (
             route_data.get("start_coords")
             or route_data.get("origin_coords")
         )
-
-
-        # ----------------------------------------------------
-        # Destination coordinates
-        # ----------------------------------------------------
 
         destination_coords = (
             route_data.get("destination_coords")
@@ -523,15 +581,11 @@ def load_route_from_previous_page():
                     }
 
 
-        # ----------------------------------------------------
-        # Mark the exact loaded text. The location picker will
-        # skip geocoding while this text is unchanged.
-        # ----------------------------------------------------
-
         st.session_state.loaded_route_initial_texts = {
             "start_map": str(start_name or ""),
             "destination_map": str(destination_name or "")
         }
+
 
         # ----------------------------------------------------
         # TRAVEL MODE
@@ -542,7 +596,6 @@ def load_route_from_previous_page():
         )
 
         if saved_mode:
-
             st.session_state.travel_mode = saved_mode
 
 
@@ -592,7 +645,7 @@ def load_route_from_previous_page():
 
 
     # ========================================================
-    # 2. SAVED PLACE
+    # SAVED PLACE
     # ========================================================
 
     saved_place = None
@@ -620,12 +673,10 @@ def load_route_from_previous_page():
             or "Saved place"
         )
 
-
         lat = saved_place.get("lat")
         lon = saved_place.get("lon")
 
 
-        # Saved place becomes destination
         st.session_state.destination = str(
             name
         )
@@ -641,8 +692,14 @@ def load_route_from_previous_page():
             }
 
             st.session_state.loaded_route_initial_texts = {
-                "start_map": st.session_state.get("start_location", ""),
-                "destination_map": str(name)
+                "start_map":
+                    st.session_state.get(
+                        "start_location",
+                        ""
+                    ),
+
+                "destination_map":
+                    str(name)
             }
 
 
@@ -770,14 +827,20 @@ def location_picker(
     location_text_key,
     map_key
 ):
-    """
-    Reusable search/pin location picker.
-    """
 
-    st.subheader(f"{icon} {label}")
+    st.subheader(
+        f"{icon} {label}"
+    )
 
-    widget_version = st.session_state.get("route_form_version", 0)
-    widget_key = f"{map_key}_{widget_version}"
+
+    widget_version = st.session_state.get(
+        "route_form_version",
+        0
+    )
+
+    widget_key = (
+        f"{map_key}_{widget_version}"
+    )
 
 
     # ========================================================
@@ -822,8 +885,6 @@ def location_picker(
         )
 
 
-        # Keep session-state text updated
-
         st.session_state[
             location_text_key
         ] = query
@@ -835,6 +896,7 @@ def location_picker(
             and current.get("lon") is not None
         )
 
+
         initial_loaded_text = (
             st.session_state.get(
                 "loaded_route_initial_texts",
@@ -842,25 +904,33 @@ def location_picker(
             ).get(map_key)
         )
 
-        # A History/Saved Places route already has valid coordinates.
-        # While the user has not changed the pre-filled text, NEVER
-        # geocode it again. This prevents the false warning caused by
-        # long route-history names such as "USA, Baldwin Avenue...".
+
         loaded_location = (
             current_is_valid
             and initial_loaded_text is not None
-            and query.strip() == str(initial_loaded_text).strip()
+            and query.strip()
+            == str(initial_loaded_text).strip()
         )
 
+
         if loaded_location:
+
             results = None
 
         elif len(query.strip()) >= 3:
-            with st.spinner("Searching California..."):
-                results = search_california_locations(query)
+
+            with st.spinner(
+                "Searching California..."
+            ):
+
+                results = search_california_locations(
+                    query
+                )
 
         else:
+
             results = None
+
 
         if results:
 
@@ -869,12 +939,23 @@ def location_picker(
                 for result in results
             ]
 
+
             selected_index = 0
 
+
             if current:
-                current_name = current.get("display_name", "")
+
+                current_name = current.get(
+                    "display_name",
+                    ""
+                )
+
                 if current_name in options:
-                    selected_index = options.index(current_name)
+
+                    selected_index = options.index(
+                        current_name
+                    )
+
 
             selected = st.selectbox(
                 f"Select your {label.lower()}",
@@ -883,6 +964,7 @@ def location_picker(
                 key=f"{widget_key}_selection",
                 label_visibility="collapsed"
             )
+
 
             selected_result = next(
                 (
@@ -893,16 +975,35 @@ def location_picker(
                 None
             )
 
+
             if selected_result:
-                st.session_state[session_key] = selected_result
-                st.session_state[location_text_key] = selected_result["display_name"]
+
+                st.session_state[
+                    session_key
+                ] = selected_result
+
+
+                st.session_state[
+                    location_text_key
+                ] = selected_result[
+                    "display_name"
+                ]
+
 
                 st.session_state.setdefault(
                     "loaded_route_initial_texts",
                     {}
-                ).pop(map_key, None)
+                ).pop(
+                    map_key,
+                    None
+                )
 
-        elif not loaded_location and len(query.strip()) >= 3:
+
+        elif (
+            not loaded_location
+            and len(query.strip()) >= 3
+        ):
+
             st.warning(
                 "No California locations found. "
                 "Try a more specific search."
@@ -954,7 +1055,10 @@ def location_picker(
                     current["lat"],
                     current["lon"]
                 ],
-                tooltip=f"Selected {label.lower()}",
+                tooltip=(
+                    f"Selected "
+                    f"{label.lower()}"
+                ),
                 popup=label
             ).add_to(m)
 
@@ -1002,10 +1106,15 @@ def location_picker(
                     location_text_key
                 ] = pinned_name
 
+
                 st.session_state.setdefault(
                     "loaded_route_initial_texts",
                     {}
-                ).pop(map_key, None)
+                ).pop(
+                    map_key,
+                    None
+                )
+
 
                 st.rerun()
 
@@ -1033,10 +1142,6 @@ def location_picker(
 # ============================================================
 
 def switch_locations():
-
-    # --------------------------------------------------------
-    # Get current values
-    # --------------------------------------------------------
 
     old_start_result = st.session_state.get(
         "start_result"
@@ -1105,16 +1210,26 @@ def switch_locations():
         old_start_coords
     )
 
-    # The swapped locations already have valid coordinates.
-    # Treat the swapped text as loaded so it is not geocoded again.
+
+    # --------------------------------------------------------
+    # Prevent unnecessary geocoding
+    # --------------------------------------------------------
+
     st.session_state.loaded_route_initial_texts = {
         "start_map": old_destination,
         "destination_map": old_start_location
     }
 
-    # Refresh the Start/Destination widgets so their visible text swaps too.
+
+    # --------------------------------------------------------
+    # Refresh location widgets
+    # --------------------------------------------------------
+
     st.session_state.route_form_version = (
-        st.session_state.get("route_form_version", 0) + 1
+        st.session_state.get(
+            "route_form_version",
+            0
+        ) + 1
     )
 
 
@@ -1158,8 +1273,6 @@ with col_start:
 
 with col_switch:
 
-    # Dedicated keyed container makes the switch easy to style
-    # without affecting the other buttons on the page.
     with st.container(
         key="switch_location_container"
     ):
@@ -1169,7 +1282,9 @@ with col_switch:
             key="switch_locations",
             type="secondary"
         ):
+
             switch_locations()
+
             st.rerun()
 
 
@@ -1214,10 +1329,6 @@ with pref_col1:
         "EV"
     ]
 
-
-    # --------------------------------------------------------
-    # EV IS DEFAULT
-    # --------------------------------------------------------
 
     current_mode = st.session_state.get(
         "travel_mode",
