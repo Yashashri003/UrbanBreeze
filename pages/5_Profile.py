@@ -11,32 +11,277 @@ st.set_page_config(
     layout="wide"
 )
 
+# ============================================================
+# USER DATA STORAGE
+# ============================================================
 
+import os
+import json
+
+
+PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+DATA_DIR = os.path.join(
+    PROJECT_ROOT,
+    "data"
+)
+
+USERS_FILE = os.path.join(
+    DATA_DIR,
+    "users.json"
+)
+
+
+def load_users():
+
+    if not os.path.exists(USERS_FILE):
+        return []
+
+    try:
+
+        with open(
+            USERS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            data = json.load(file)
+
+        if isinstance(data, list):
+            return data
+
+    except (
+        json.JSONDecodeError,
+        OSError
+    ):
+
+        pass
+
+    return []
+
+
+def save_users(users):
+
+    os.makedirs(
+        DATA_DIR,
+        exist_ok=True
+    )
+
+    with open(
+        USERS_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            users,
+            file,
+            indent=2,
+            ensure_ascii=False
+        )
+
+
+def get_current_user():
+
+    email = st.session_state.get(
+        "current_user_email"
+    )
+
+    if not email:
+        return None
+
+    users = load_users()
+
+    for user in users:
+
+        if user.get(
+            "email",
+            ""
+        ).lower() == email.lower():
+
+            return user
+
+    return None
+
+
+def update_current_user():
+
+    email = st.session_state.get(
+        "current_user_email"
+    )
+
+    if not email:
+        return
+
+    users = load_users()
+
+    for user in users:
+
+        if user.get(
+            "email",
+            ""
+        ).lower() == email.lower():
+
+            user["name"] = st.session_state.get(
+                "profile_name",
+                ""
+            )
+
+            user["username"] = st.session_state.get(
+                "profile_username",
+                ""
+            )
+
+            user["email"] = st.session_state.get(
+                "profile_email",
+                email
+            )
+
+            user["coolness_preference"] = st.session_state.get(
+                "coolness_preference",
+                55
+            )
+
+            user["max_extra_time"] = st.session_state.get(
+                "max_extra_time",
+                10
+            )
+
+            user["heat_priority"] = st.session_state.get(
+                "heat_priority",
+                "High"
+            )
+
+            user["default_travel_mode"] = st.session_state.get(
+                "default_travel_mode",
+                "🚶 Walk"
+            )
+
+            user["saved_home"] = st.session_state.get(
+                "saved_home",
+                ""
+            )
+
+            user["saved_work"] = st.session_state.get(
+                "saved_work",
+                ""
+            )
+
+            user["saved_other"] = st.session_state.get(
+                "saved_other",
+                ""
+            )
+
+            save_users(users)
+
+            return
 # ============================================================
 # SESSION STATE
 # ============================================================
 
-defaults = {
-    "profile_name": "Your Name",
-    "profile_username": "urbanbreeze_user",
-    "profile_email": "you@example.com",
+ # ============================================================
+# LOAD LOGGED-IN USER
+# ============================================================
 
-    "coolness_preference": 55,
-    "max_extra_time": 10,
-    "heat_priority": "High",
-    "default_travel_mode": "🚶 Walk",
+current_user = get_current_user()
 
-    "saved_home": "",
-    "saved_work": "",
-    "saved_other": "",
+if current_user:
 
-    "profile_photo": None,
-    "show_edit_profile": False,
-}
+    defaults = {
+
+        "profile_name": current_user.get(
+            "name",
+            "Your Name"
+        ),
+
+        "profile_username": current_user.get(
+            "username",
+            "urbanbreeze_user"
+        ),
+
+        "profile_email": current_user.get(
+            "email",
+            "you@example.com"
+        ),
+
+        "coolness_preference": current_user.get(
+            "coolness_preference",
+            55
+        ),
+
+        "max_extra_time": current_user.get(
+            "max_extra_time",
+            10
+        ),
+
+        "heat_priority": current_user.get(
+            "heat_priority",
+            "High"
+        ),
+
+        "default_travel_mode": current_user.get(
+            "default_travel_mode",
+            "🚶 Walk"
+        ),
+
+        "saved_home": current_user.get(
+            "saved_home",
+            ""
+        ),
+
+        "saved_work": current_user.get(
+            "saved_work",
+            ""
+        ),
+
+        "saved_other": current_user.get(
+            "saved_other",
+            ""
+        ),
+
+        "profile_photo": None,
+
+        "show_edit_profile": False,
+    }
+
+else:
+
+    defaults = {
+
+        "profile_name": "Your Name",
+
+        "profile_username": "urbanbreeze_user",
+
+        "profile_email": "you@example.com",
+
+        "coolness_preference": 55,
+
+        "max_extra_time": 10,
+
+        "heat_priority": "High",
+
+        "default_travel_mode": "🚶 Walk",
+
+        "saved_home": "",
+
+        "saved_work": "",
+
+        "saved_other": "",
+
+        "profile_photo": None,
+
+        "show_edit_profile": False,
+    }
+
 
 for key, value in defaults.items():
 
     if key not in st.session_state:
+
         st.session_state[key] = value
 
 
@@ -516,18 +761,22 @@ if st.session_state.show_edit_profile:
             )
 
             if save:
-
                 st.session_state.profile_name = name
+
                 st.session_state.profile_username = username
+
                 st.session_state.profile_email = email
+
+                update_current_user()
 
                 st.session_state.show_edit_profile = False
 
                 st.success(
                     "Profile updated successfully."
-                )
+            )
 
-                st.rerun()
+            st.rerun()
+               
 
 
 # ============================================================
@@ -689,14 +938,17 @@ with place1:
         )
 
         home = st.text_input(
-            "Home",
-            placeholder="Enter your home",
-            value=st.session_state.saved_home,
-            key="home_input"
-        )
+    "Home",
+    placeholder="Enter your home",
+    value=st.session_state.saved_home,
+    key="home_input"
+)
 
-        st.session_state.saved_home = home
+if home != st.session_state.saved_home:
 
+    st.session_state.saved_home = home
+
+    update_current_user()
 
 # -------------------------
 # WORK
@@ -719,13 +971,17 @@ with place2:
         )
 
         work = st.text_input(
-            "Work",
-            placeholder="Enter your workplace",
-            value=st.session_state.saved_work,
-            key="work_input"
-        )
+    "Work",
+    placeholder="Enter your workplace",
+    value=st.session_state.saved_work,
+    key="work_input"
+)
 
-        st.session_state.saved_work = work
+if work != st.session_state.saved_work:
+
+    st.session_state.saved_work = work
+
+    update_current_user()
 
 
 # -------------------------
@@ -749,13 +1005,17 @@ with place3:
         )
 
         other = st.text_input(
-            "Other",
-            placeholder="Enter another place",
-            value=st.session_state.saved_other,
-            key="other_input"
-        )
+    "Other",
+    placeholder="Enter another place",
+    value=st.session_state.saved_other,
+    key="other_input"
+)
 
-        st.session_state.saved_other = other
+if other != st.session_state.saved_other:
+
+    st.session_state.saved_other = other
+
+    update_current_user()
 
 
 # ============================================================
@@ -898,13 +1158,6 @@ with account_col2:
             unsafe_allow_html=True
         )
 
-        if st.button(
-            "Sign Out",
-            use_container_width=True
-        ):
-
-            st.session_state.signed_out = True
-
-            st.success(
-                "You have been signed out."
-            )
+        if st.button("Sign Out", type="primary", use_container_width=True):
+            st.session_state.authenticated = False
+            st.switch_page("pages/0_Login.py")
