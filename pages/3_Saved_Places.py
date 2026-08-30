@@ -58,7 +58,7 @@ st.markdown(
 
     .block-container {
         max-width: 1240px;
-        padding-top: 1rem;
+        padding-top: 5rem;
         padding-bottom: 3rem;
     }
 
@@ -811,6 +811,7 @@ with nav_profile:
     )
 
 
+
 # ============================================================
 # PAGE HEADER
 # ============================================================
@@ -819,34 +820,16 @@ hero_col, hero_button = st.columns(
     [5, 1]
 )
 
-
 with hero_col:
 
-    icon_col, text_col = st.columns(
-        [0.65, 5]
+    st.title(
+        "Saved Places"
     )
 
-    with icon_col:
-
-        st.markdown(
-            """
-            <div class="hero-icon-box">
-                ⌖
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    with text_col:
-
-        st.title(
-            "Saved Places"
-        )
-
-        st.caption(
-            "Save your favourite locations and access them "
-            "quickly when planning your next route."
-        )
+    st.caption(
+        "Save your favourite locations and access them "
+        "quickly when planning your next route."
+    )
 
 
 with hero_button:
