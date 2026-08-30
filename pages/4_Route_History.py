@@ -54,7 +54,7 @@ st.markdown(
 
     .block-container {
         max-width: 1240px;
-        padding-top: 0.5rem;
+        padding-top: 5rem;
         padding-bottom: 4rem;
     }
 
@@ -127,38 +127,6 @@ st.markdown(
 
     [data-testid="stPageLink-NavLink"]:hover {
         color: #2dd4bf !important;
-    }
-
-
-    /* ========================================================
-       HISTORY HEADER
-       ======================================================== */
-
-    .history-icon-box {
-        width: 62px;
-        height: 62px;
-        border-radius: 16px;
-
-        background-color: #0d3339;
-
-        color: #2dd4bf;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        font-size: 30px;
-
-        border: 1px solid #22535a;
-
-        box-shadow:
-            0 5px 18px rgba(0, 0, 0, 0.25);
-    }
-
-
-    .muted-text {
-        color: #91aeb5;
-        font-size: 14px;
     }
 
 
@@ -383,12 +351,6 @@ st.markdown(
             font-size: 20px;
         }
 
-        .history-icon-box {
-            width: 52px;
-            height: 52px;
-            font-size: 24px;
-        }
-
         .stButton > button {
             min-height: 42px !important;
         }
@@ -542,29 +504,13 @@ st.markdown(
 # PAGE HEADER
 # ============================================================
 
-header_icon, header_text = st.columns(
-    [0.6, 6]
+st.title(
+    "Route History"
 )
 
-
-with header_icon:
-
-    st.markdown(
-        '<div class="history-icon-box">↺</div>',
-        unsafe_allow_html=True
-    )
-
-
-with header_text:
-
-    st.title(
-        "Route History"
-    )
-
-    st.caption(
-        "View your previous routes and quickly plan them again."
-    )
-
+st.caption(
+    "View your previous routes and quickly plan them again."
+)
 
 # ============================================================
 # LOAD HISTORY
