@@ -7,8 +7,11 @@ import requests
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
-# Number of route points used for climate analysis
+# Default number of route points used for climate analysis
 DEFAULT_SAMPLE_POINTS = 5
+
+# Maximum number of climate points for very long routes
+MAX_SAMPLE_POINTS = 30
 
 # Request timeout in seconds
 REQUEST_TIMEOUT = 15
@@ -62,6 +65,7 @@ def sample_route_points(
         try:
             lon = float(point[0])
             lat = float(point[1])
+
         except (TypeError, ValueError):
             continue
 
@@ -91,6 +95,8 @@ def sample_route_points(
         int(number_of_points)
     )
 
+    # If route has fewer geometry points than
+    # requested climate points
     if len(cleaned) <= number_of_points:
 
         selected = cleaned
@@ -143,6 +149,58 @@ def sample_route_points(
 
 
 # ============================================================
+# DISTANCE-BASED CLIMATE SAMPLE COUNT
+# ============================================================
+
+def get_sample_count(route_distance_km):
+    """
+    Decide how many climate points should be sampled
+    based on route distance.
+
+    Sampling rules:
+
+        <= 5 km     -> 5 points
+        <= 20 km    -> 8 points
+        <= 50 km    -> 12 points
+        <= 100 km   -> 20 points
+        > 100 km    -> 30 points
+
+    Maximum:
+        30 points
+    """
+
+    if route_distance_km is None:
+        return DEFAULT_SAMPLE_POINTS
+
+    try:
+
+        distance = float(
+            route_distance_km
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return DEFAULT_SAMPLE_POINTS
+
+    if distance <= 5:
+        return 5
+
+    if distance <= 20:
+        return 8
+
+    if distance <= 50:
+        return 12
+
+    if distance <= 100:
+        return 20
+
+    return MAX_SAMPLE_POINTS
+
+
+# ============================================================
 # TEMPERATURE CONVERSION
 # ============================================================
 
@@ -152,12 +210,14 @@ def clean_temperature(value):
         return None
 
     try:
+
         return float(value)
 
     except (
         TypeError,
         ValueError
     ):
+
         return None
 
 
@@ -170,11 +230,14 @@ def get_open_meteo_temperatures(points):
     Get current weather for multiple route points
     using a SINGLE Open-Meteo API request.
 
-    Open-Meteo supports multiple coordinates in one request,
-    so 5 sampled route points do not require 5 API calls.
+    Open-Meteo supports multiple coordinates in one
+    request, so multiple sampled route points do not
+    require separate API requests.
 
     Returns:
+
         List of dictionaries containing:
+
             lat
             lon
             temperature
@@ -201,15 +264,23 @@ def get_open_meteo_temperatures(points):
     )
 
     params = {
+
         "latitude": latitudes,
+
         "longitude": longitudes,
+
         "current": (
             "temperature_2m,"
             "apparent_temperature,"
             "relative_humidity_2m"
         ),
+
         "timezone": "auto"
     }
+
+    # --------------------------------------------------------
+    # API REQUEST
+    # --------------------------------------------------------
 
     try:
 
@@ -230,12 +301,14 @@ def get_open_meteo_temperatures(points):
         )
 
         return [
+
             {
                 "lat": point["lat"],
                 "lon": point["lon"],
                 "success": False,
                 "error": str(error)
             }
+
             for point in points
         ]
 
@@ -246,12 +319,14 @@ def get_open_meteo_temperatures(points):
         )
 
         return [
+
             {
                 "lat": point["lat"],
                 "lon": point["lon"],
                 "success": False,
                 "error": "Invalid JSON response."
             }
+
             for point in points
         ]
 
@@ -349,10 +424,9 @@ def analyze_temperature_point(
     """
     Compatibility helper.
 
-    This function performs a single Open-Meteo request.
+    Performs a single Open-Meteo request.
 
-    The main route analysis below uses the batch function
-    instead, because that requires only one API request.
+    Main route analysis uses the batch function instead.
     """
 
     results = get_open_meteo_temperatures(
@@ -383,18 +457,17 @@ def analyze_temperature_point(
 
 def analyze_route_temperature(
     route,
-    number_of_points=DEFAULT_SAMPLE_POINTS
+    number_of_points=None
 ):
     """
     Analyze temperature along a route.
 
-    The route is sampled at evenly distributed points.
+    The number of sampled points is automatically
+    determined from route distance unless
+    number_of_points is explicitly provided.
 
-    IMPORTANT:
-    All sampled points are sent to Open-Meteo in ONE request.
-
-    This avoids making five separate API requests for
-    a five-point route.
+    All sampled points are sent to Open-Meteo
+    in ONE request.
     """
 
     geometry = route.get(
@@ -408,6 +481,56 @@ def analyze_route_temperature(
             "error":
                 "Route geometry is missing."
         }
+
+    # ========================================================
+    # DETERMINE SAMPLE COUNT
+    # ========================================================
+
+    if number_of_points is None:
+
+        route_distance_km = route.get(
+            "distance_km"
+        )
+
+        number_of_points = get_sample_count(
+            route_distance_km
+        )
+
+    else:
+
+        route_distance_km = route.get(
+            "distance_km"
+        )
+
+    print("\n")
+    print("=" * 60)
+
+    print(
+        "CLIMATE ANALYSIS"
+    )
+
+    print("=" * 60)
+
+    print(
+        f"Route distance: "
+        f"{route_distance_km} km"
+    )
+
+    print(
+        f"Climate sample points: "
+        f"{number_of_points}"
+    )
+
+    print(
+        "Using Open-Meteo..."
+    )
+
+    print(
+        "One request will be used for "
+        "all sampled points."
+    )
+
+    print("=" * 60)
 
     # ========================================================
     # SAMPLE ROUTE
@@ -426,24 +549,10 @@ def analyze_route_temperature(
                 "No valid route points were found."
         }
 
-    print("\n")
-    print("=" * 60)
     print(
-        f"CLIMATE ANALYSIS → "
-        f"{len(points)} POINTS"
+        f"Actual route points selected: "
+        f"{len(points)}"
     )
-    print("=" * 60)
-
-    print(
-        "Using Open-Meteo..."
-    )
-
-    print(
-        "One request will be used for "
-        "all sampled points."
-    )
-
-    print("=" * 60)
 
     # ========================================================
     # GET WEATHER
@@ -454,6 +563,7 @@ def analyze_route_temperature(
     )
 
     # Add index so route order is preserved
+
     for index, result in enumerate(
         point_results
     ):
@@ -528,7 +638,8 @@ def analyze_route_temperature(
 
     average_temperature = (
         sum(temperatures)
-        / len(temperatures)
+        /
+        len(temperatures)
     )
 
     minimum_temperature = min(
@@ -547,7 +658,8 @@ def analyze_route_temperature(
 
         average_apparent_temperature = (
             sum(apparent_temperatures)
-            / len(apparent_temperatures)
+            /
+            len(apparent_temperatures)
         )
 
     else:
@@ -602,8 +714,10 @@ def analyze_route_temperature(
                     average_apparent_temperature,
                     2
                 )
+
                 if average_apparent_temperature
                 is not None
+
                 else None
             ),
 
@@ -626,7 +740,11 @@ def analyze_route_temperature(
 
     print("\n")
     print("=" * 60)
-    print("CLIMATE ANALYSIS COMPLETE")
+
+    print(
+        "CLIMATE ANALYSIS COMPLETE"
+    )
+
     print("=" * 60)
 
     print(
@@ -883,7 +1001,8 @@ def compare_routes(
 
             time_score = (
                 fastest_time
-                / route_time
+                /
+                route_time
             ) * 100
 
         # ----------------------------------------------------
