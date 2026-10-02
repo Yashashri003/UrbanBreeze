@@ -1,9 +1,17 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
 
-from utils.fortyguard import (
-    get_temperature,
-    is_california_coordinate
-)
+
+# ============================================================
+# OPEN-METEO CONFIGURATION
+# ============================================================
+
+OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+
+# Number of route points used for climate analysis
+DEFAULT_SAMPLE_POINTS = 5
+
+# Request timeout in seconds
+REQUEST_TIMEOUT = 15
 
 
 # ============================================================
@@ -12,12 +20,12 @@ from utils.fortyguard import (
 
 def sample_route_points(
     geometry,
-    number_of_points=5
+    number_of_points=DEFAULT_SAMPLE_POINTS
 ):
     """
     Select evenly distributed points from an OSRM route.
 
-    OSRM format:
+    OSRM geometry format:
         [longitude, latitude]
 
     Returned format:
@@ -27,6 +35,9 @@ def sample_route_points(
         }
     """
 
+    if not geometry:
+        return []
+
     coordinates = geometry.get(
         "coordinates",
         []
@@ -34,7 +45,6 @@ def sample_route_points(
 
     if not coordinates:
         return []
-
 
     # --------------------------------------------------------
     # Clean duplicate points
@@ -49,8 +59,11 @@ def sample_route_points(
         if len(point) < 2:
             continue
 
-        lon = float(point[0])
-        lat = float(point[1])
+        try:
+            lon = float(point[0])
+            lat = float(point[1])
+        except (TypeError, ValueError):
+            continue
 
         current = (
             round(lat, 6),
@@ -66,14 +79,17 @@ def sample_route_points(
 
         previous = current
 
-
     if not cleaned:
         return []
-
 
     # --------------------------------------------------------
     # Select evenly spaced points
     # --------------------------------------------------------
+
+    number_of_points = max(
+        1,
+        int(number_of_points)
+    )
 
     if len(cleaned) <= number_of_points:
 
@@ -91,9 +107,7 @@ def sample_route_points(
 
         selected = []
 
-        for i in range(
-            number_of_points
-        ):
+        for i in range(number_of_points):
 
             position = (
                 i
@@ -107,7 +121,6 @@ def sample_route_points(
                 cleaned[index]
             )
 
-
     # --------------------------------------------------------
     # Convert to latitude/longitude
     # --------------------------------------------------------
@@ -119,25 +132,12 @@ def sample_route_points(
         lon = float(point[0])
         lat = float(point[1])
 
-
-        # ----------------------------------------------------
-        # California safety check
-        # ----------------------------------------------------
-
-        if not is_california_coordinate(
-            lat,
-            lon
-        ):
-            continue
-
-
         points.append(
             {
                 "lat": lat,
                 "lon": lon
             }
         )
-
 
     return points
 
@@ -152,19 +152,194 @@ def clean_temperature(value):
         return None
 
     try:
-
         return float(value)
 
     except (
         TypeError,
         ValueError
     ):
-
         return None
 
 
 # ============================================================
-# SINGLE POINT FORTYGUARD ANALYSIS
+# OPEN-METEO WEATHER REQUEST
+# ============================================================
+
+def get_open_meteo_temperatures(points):
+    """
+    Get current weather for multiple route points
+    using a SINGLE Open-Meteo API request.
+
+    Open-Meteo supports multiple coordinates in one request,
+    so 5 sampled route points do not require 5 API calls.
+
+    Returns:
+        List of dictionaries containing:
+            lat
+            lon
+            temperature
+            apparent_temperature
+            humidity
+            success
+    """
+
+    if not points:
+        return []
+
+    # --------------------------------------------------------
+    # Build coordinate lists
+    # --------------------------------------------------------
+
+    latitudes = ",".join(
+        str(point["lat"])
+        for point in points
+    )
+
+    longitudes = ",".join(
+        str(point["lon"])
+        for point in points
+    )
+
+    params = {
+        "latitude": latitudes,
+        "longitude": longitudes,
+        "current": (
+            "temperature_2m,"
+            "apparent_temperature,"
+            "relative_humidity_2m"
+        ),
+        "timezone": "auto"
+    }
+
+    try:
+
+        response = requests.get(
+            OPEN_METEO_URL,
+            params=params,
+            timeout=REQUEST_TIMEOUT
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+    except requests.RequestException as error:
+
+        print(
+            f"\nOPEN-METEO ERROR: {error}"
+        )
+
+        return [
+            {
+                "lat": point["lat"],
+                "lon": point["lon"],
+                "success": False,
+                "error": str(error)
+            }
+            for point in points
+        ]
+
+    except ValueError as error:
+
+        print(
+            f"\nOPEN-METEO JSON ERROR: {error}"
+        )
+
+        return [
+            {
+                "lat": point["lat"],
+                "lon": point["lon"],
+                "success": False,
+                "error": "Invalid JSON response."
+            }
+            for point in points
+        ]
+
+    # --------------------------------------------------------
+    # Open-Meteo returns a list when multiple coordinates
+    # are requested.
+    # --------------------------------------------------------
+
+    if not isinstance(data, list):
+
+        data = [data]
+
+    results = []
+
+    for index, point in enumerate(points):
+
+        if index >= len(data):
+
+            results.append(
+                {
+                    "lat": point["lat"],
+                    "lon": point["lon"],
+                    "success": False,
+                    "error": "Missing Open-Meteo result."
+                }
+            )
+
+            continue
+
+        location_data = data[index]
+
+        current = location_data.get(
+            "current",
+            {}
+        )
+
+        temperature = clean_temperature(
+            current.get(
+                "temperature_2m"
+            )
+        )
+
+        apparent_temperature = clean_temperature(
+            current.get(
+                "apparent_temperature"
+            )
+        )
+
+        humidity = current.get(
+            "relative_humidity_2m"
+        )
+
+        if temperature is None:
+
+            results.append(
+                {
+                    "lat": point["lat"],
+                    "lon": point["lon"],
+                    "success": False,
+                    "error":
+                        "Temperature was not returned."
+                }
+            )
+
+            continue
+
+        results.append(
+            {
+                "lat": point["lat"],
+                "lon": point["lon"],
+                "success": True,
+
+                "temperature":
+                    temperature,
+
+                "apparent_temperature":
+                    apparent_temperature,
+
+                "humidity":
+                    humidity
+            }
+        )
+
+    return results
+
+
+# ============================================================
+# SINGLE POINT ANALYSIS
 # ============================================================
 
 def analyze_temperature_point(
@@ -172,155 +347,34 @@ def analyze_temperature_point(
     point
 ):
     """
-    Analyze one route point using FortyGuard.
+    Compatibility helper.
 
-    This function is intentionally separated from
-    analyze_route_temperature() so multiple points
-    can be processed concurrently.
+    This function performs a single Open-Meteo request.
+
+    The main route analysis below uses the batch function
+    instead, because that requires only one API request.
     """
 
-    latitude = point["lat"]
-    longitude = point["lon"]
+    results = get_open_meteo_temperatures(
+        [point]
+    )
 
-
-    # --------------------------------------------------------
-    # California check
-    # --------------------------------------------------------
-
-    if not is_california_coordinate(
-        latitude,
-        longitude
-    ):
+    if not results:
 
         return {
             "index": index,
-            "lat": latitude,
-            "lon": longitude,
-            "success": False,
-            "error": (
-                "Coordinate is outside "
-                "California."
-            )
-        }
-
-
-    # --------------------------------------------------------
-    # FortyGuard
-    # --------------------------------------------------------
-
-    try:
-
-        print(
-            f"\n🌡️ FortyGuard point {index + 1}"
-            f" started:"
-        )
-
-        print(
-            f"   Latitude: {latitude}"
-        )
-
-        print(
-            f"   Longitude: {longitude}"
-        )
-
-
-        result = get_temperature(
-            latitude,
-            longitude
-        )
-
-
-        print(
-            f"🌡️ FortyGuard point {index + 1}"
-            f" finished."
-        )
-
-
-    except Exception as error:
-
-        print(
-            f"\nFORTYGUARD ERROR "
-            f"(point {index + 1})"
-        )
-
-        print(
-            f"Error: {repr(error)}"
-        )
-
-
-        return {
-            "index": index,
-            "lat": latitude,
-            "lon": longitude,
-            "success": False,
-            "error": str(error)
-        }
-
-
-    # --------------------------------------------------------
-    # FortyGuard failure
-    # --------------------------------------------------------
-
-    if not result.get(
-        "success",
-        False
-    ):
-
-        return {
-            "index": index,
-            "lat": latitude,
-            "lon": longitude,
+            "lat": point["lat"],
+            "lon": point["lon"],
             "success": False,
             "error":
-                result.get(
-                    "error",
-                    "FortyGuard request failed."
-                )
+                "No Open-Meteo result."
         }
 
+    result = results[0]
 
-    # --------------------------------------------------------
-    # Extract temperature
-    # --------------------------------------------------------
+    result["index"] = index
 
-    temperature = clean_temperature(
-        result.get(
-            "temperature"
-        )
-    )
-
-
-    minimum = clean_temperature(
-        result.get(
-            "minimum"
-        )
-    )
-
-
-    maximum = clean_temperature(
-        result.get(
-            "maximum"
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # Build result
-    # --------------------------------------------------------
-
-    return {
-        "index": index,
-        "lat": latitude,
-        "lon": longitude,
-        "success": True,
-        "temperature": temperature,
-        "minimum": minimum,
-        "maximum": maximum,
-        "activity_id":
-            result.get(
-                "activity_id"
-            )
-    }
+    return result
 
 
 # ============================================================
@@ -329,26 +383,23 @@ def analyze_temperature_point(
 
 def analyze_route_temperature(
     route,
-    number_of_points=5
+    number_of_points=DEFAULT_SAMPLE_POINTS
 ):
     """
     Analyze temperature along a route.
 
-    Five points are sampled by default.
+    The route is sampled at evenly distributed points.
 
     IMPORTANT:
-    The five FortyGuard requests are processed
-    concurrently instead of sequentially.
+    All sampled points are sent to Open-Meteo in ONE request.
 
-    The FortyGuard cache is still respected inside
-    get_temperature(), so cached points do not
-    create new API requests.
+    This avoids making five separate API requests for
+    a five-point route.
     """
 
     geometry = route.get(
         "geometry"
     )
-
 
     if not geometry:
 
@@ -357,7 +408,6 @@ def analyze_route_temperature(
             "error":
                 "Route geometry is missing."
         }
-
 
     # ========================================================
     # SAMPLE ROUTE
@@ -368,153 +418,59 @@ def analyze_route_temperature(
         number_of_points
     )
 
-
     if not points:
 
         return {
             "success": False,
             "error":
-                "No valid California points "
-                "were found on this route."
+                "No valid route points were found."
         }
-
 
     print("\n")
     print("=" * 60)
     print(
-        f"CLIMATE ANALYSIS "
-        f"→ {len(points)} POINTS"
+        f"CLIMATE ANALYSIS → "
+        f"{len(points)} POINTS"
     )
     print("=" * 60)
 
     print(
-        "FortyGuard requests will run "
-        "concurrently."
+        "Using Open-Meteo..."
+    )
+
+    print(
+        "One request will be used for "
+        "all sampled points."
     )
 
     print("=" * 60)
 
-
     # ========================================================
-    # RESULTS
-    # ========================================================
-
-    temperatures = []
-
-    point_results = []
-
-
-    # ========================================================
-    # PARALLEL FORTYGUARD REQUESTS
+    # GET WEATHER
     # ========================================================
 
-    # We keep the number of workers equal to the
-    # number of sampled points, but never more than 5.
-    #
-    # This means:
-    #
-    # OLD:
-    #
-    # Point 1 → wait
-    # Point 2 → wait
-    # Point 3 → wait
-    # Point 4 → wait
-    # Point 5 → wait
-    #
-    # NEW:
-    #
-    # Point 1 ─┐
-    # Point 2 ─┤
-    # Point 3 ─┼→ FortyGuard concurrently
-    # Point 4 ─┤
-    # Point 5 ─┘
-
-    max_workers = min(
-        len(points),
-        5
+    point_results = get_open_meteo_temperatures(
+        points
     )
 
+    # Add index so route order is preserved
+    for index, result in enumerate(
+        point_results
+    ):
 
-    with ThreadPoolExecutor(
-        max_workers=max_workers
-    ) as executor:
-
-        future_to_index = {}
-
-
-        for index, point in enumerate(
-            points
-        ):
-
-            future = executor.submit(
-                analyze_temperature_point,
-                index,
-                point
-            )
-
-            future_to_index[
-                future
-            ] = index
-
-
-        # ----------------------------------------------------
-        # Collect completed requests
-        # ----------------------------------------------------
-
-        completed_results = []
-
-
-        for future in as_completed(
-            future_to_index
-        ):
-
-            index = future_to_index[
-                future
-            ]
-
-
-            try:
-
-                result = future.result()
-
-            except Exception as error:
-
-                point = points[index]
-
-                result = {
-                    "index": index,
-                    "lat": point["lat"],
-                    "lon": point["lon"],
-                    "success": False,
-                    "error": str(error)
-                }
-
-
-            completed_results.append(
-                result
-            )
-
-
-    # ========================================================
-    # RESTORE ROUTE ORDER
-    # ========================================================
-
-    completed_results.sort(
-        key=lambda item:
-            item["index"]
-    )
-
+        result["index"] = index
 
     # ========================================================
     # PROCESS RESULTS
     # ========================================================
 
-    for result in completed_results:
+    temperatures = []
 
-        point_results.append(
-            result
-        )
+    apparent_temperatures = []
 
+    successful_results = []
+
+    for result in point_results:
 
         if result.get(
             "success",
@@ -527,6 +483,11 @@ def analyze_route_temperature(
                 )
             )
 
+            apparent_temperature = clean_temperature(
+                result.get(
+                    "apparent_temperature"
+                )
+            )
 
             if temperature is not None:
 
@@ -534,6 +495,15 @@ def analyze_route_temperature(
                     temperature
                 )
 
+                successful_results.append(
+                    result
+                )
+
+            if apparent_temperature is not None:
+
+                apparent_temperatures.append(
+                    apparent_temperature
+                )
 
     # ========================================================
     # CHECK RESULTS
@@ -545,13 +515,12 @@ def analyze_route_temperature(
             "success": False,
 
             "error":
-                "FortyGuard returned no usable "
+                "Open-Meteo returned no usable "
                 "temperature values.",
 
             "points":
                 point_results
         }
-
 
     # ========================================================
     # ROUTE STATISTICS
@@ -562,16 +531,28 @@ def analyze_route_temperature(
         / len(temperatures)
     )
 
-
     minimum_temperature = min(
         temperatures
     )
-
 
     maximum_temperature = max(
         temperatures
     )
 
+    # ========================================================
+    # APPARENT TEMPERATURE
+    # ========================================================
+
+    if apparent_temperatures:
+
+        average_apparent_temperature = (
+            sum(apparent_temperatures)
+            / len(apparent_temperatures)
+        )
+
+    else:
+
+        average_apparent_temperature = None
 
     # ========================================================
     # HEAT EXPOSURE
@@ -581,7 +562,6 @@ def analyze_route_temperature(
         average_temperature
     )
 
-
     # ========================================================
     # COOL SCORE
     # ========================================================
@@ -590,12 +570,12 @@ def analyze_route_temperature(
         average_temperature
     )
 
-
     # ========================================================
     # FINAL RESULT
     # ========================================================
 
     final_result = {
+
         "success": True,
 
         "average_temperature":
@@ -616,6 +596,17 @@ def analyze_route_temperature(
                 2
             ),
 
+        "average_apparent_temperature":
+            (
+                round(
+                    average_apparent_temperature,
+                    2
+                )
+                if average_apparent_temperature
+                is not None
+                else None
+            ),
+
         "heat_exposure":
             heat_exposure,
 
@@ -629,6 +620,9 @@ def analyze_route_temperature(
             point_results
     }
 
+    # ========================================================
+    # LOG
+    # ========================================================
 
     print("\n")
     print("=" * 60)
@@ -636,17 +630,17 @@ def analyze_route_temperature(
     print("=" * 60)
 
     print(
-        f"Average: "
+        f"Average temperature: "
         f"{final_result['average_temperature']}°C"
     )
 
     print(
-        f"Minimum: "
+        f"Minimum temperature: "
         f"{final_result['minimum_temperature']}°C"
     )
 
     print(
-        f"Maximum: "
+        f"Maximum temperature: "
         f"{final_result['maximum_temperature']}°C"
     )
 
@@ -667,7 +661,6 @@ def analyze_route_temperature(
 
     print("=" * 60)
 
-
     return final_result
 
 
@@ -680,24 +673,16 @@ def calculate_heat_exposure(
 ):
 
     if temperature_celsius is None:
-
         return "Unknown"
 
-
     if temperature_celsius < 20:
-
         return "Low"
 
-
     if temperature_celsius < 25:
-
         return "Moderate"
 
-
     if temperature_celsius < 30:
-
         return "High"
-
 
     return "Very High"
 
@@ -711,27 +696,21 @@ def calculate_cool_score(
 ):
 
     if temperature_celsius is None:
-
         return 0
-
 
     # --------------------------------------------------------
     # Excellent temperature
     # --------------------------------------------------------
 
     if temperature_celsius <= 18:
-
         return 100
-
 
     # --------------------------------------------------------
     # Very hot
     # --------------------------------------------------------
 
     if temperature_celsius >= 40:
-
         return 0
-
 
     # --------------------------------------------------------
     # Linear score
@@ -749,7 +728,6 @@ def calculate_cool_score(
         )
     )
 
-
     score = max(
         0,
         min(
@@ -757,7 +735,6 @@ def calculate_cool_score(
             score
         )
     )
-
 
     return round(
         score
@@ -790,7 +767,6 @@ def compare_routes(
             "ai_pick": None
         }
 
-
     # ========================================================
     # FASTEST
     # ========================================================
@@ -798,9 +774,11 @@ def compare_routes(
     fastest = min(
         routes,
         key=lambda route:
-            route["duration_min"]
+            route.get(
+                "duration_min",
+                float("inf")
+            )
     )
-
 
     # ========================================================
     # ROUTES WITH CLIMATE DATA
@@ -815,7 +793,6 @@ def compare_routes(
             {}
         )
 
-
         if climate.get(
             "success",
             False
@@ -824,7 +801,6 @@ def compare_routes(
             valid_routes.append(
                 route
             )
-
 
     # ========================================================
     # NO CLIMATE DATA
@@ -838,7 +814,6 @@ def compare_routes(
             "ai_pick": fastest
         }
 
-
     # ========================================================
     # COOLEST
     # ========================================================
@@ -846,9 +821,11 @@ def compare_routes(
     coolest = max(
         valid_routes,
         key=lambda route:
-            route["climate"]["cool_score"]
+            route["climate"].get(
+                "cool_score",
+                0
+            )
     )
-
 
     # ========================================================
     # AI PICK
@@ -860,16 +837,13 @@ def compare_routes(
 
             route["ai_score"] = 100
 
-
         ai_pick = fastest
-
 
         return {
             "fastest": fastest,
             "coolest": coolest,
             "ai_pick": ai_pick
         }
-
 
     # --------------------------------------------------------
     # Fastest valid route time
@@ -880,7 +854,6 @@ def compare_routes(
         for route in valid_routes
     )
 
-
     # --------------------------------------------------------
     # Calculate combined score
     # --------------------------------------------------------
@@ -889,14 +862,18 @@ def compare_routes(
 
         climate_score = (
             route["climate"]
-            ["cool_score"]
+            .get(
+                "cool_score",
+                0
+            )
         )
-
 
         route_time = (
-            route["duration_min"]
+            route.get(
+                "duration_min",
+                0
+            )
         )
-
 
         if route_time <= 0:
 
@@ -908,7 +885,6 @@ def compare_routes(
                 fastest_time
                 / route_time
             ) * 100
-
 
         # ----------------------------------------------------
         # AI weighting
@@ -924,11 +900,9 @@ def compare_routes(
             time_score * 0.30
         )
 
-
         route["ai_score"] = round(
             ai_score
         )
-
 
     # ========================================================
     # SELECT HIGHEST SCORE
@@ -943,15 +917,12 @@ def compare_routes(
             )
     )
 
-
     # ========================================================
     # RETURN
     # ========================================================
 
     return {
         "fastest": fastest,
-
         "coolest": coolest,
-
         "ai_pick": ai_pick
     }
